@@ -5,12 +5,22 @@ import os
 import tempfile
 import logging
 
+# Load .env file automatically
+env_file = os.path.join(os.path.dirname(__file__), ".env")
+if os.path.exists(env_file):
+    with open(env_file, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ[k.strip()] = v.strip().strip("'\"")
+
 from services.speech_to_text import transcribe_audio_file
 from services.audio_features import extract_audio_features
 from services.text_analysis import analyze_transcript
 from ml.predict import predict_hesitation
 from ml.feedback import generate_feedback
-from ml.semantic_relevance import calculate_relevance
+from ml.semantic_relevance import calculate_relevance, calculate_relevance_details, get_ideal_answer_llm
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -35,6 +45,18 @@ class PredictRequest(BaseModel):
     pause_count: int
     speech_duration: float
     word_count: int
+
+
+def is_no_speech_transcript(text: str) -> bool:
+    if not text or not text.strip():
+        return True
+    t = text.strip().lower()
+    if t.startswith("transcription unavailable") or t.startswith("no speech detected") or t.startswith("audio recorded successfully"):
+        return True
+    clean_t = t.rstrip(".!")
+    if clean_t in {"thank you", "thanks for watching", "you", "bye", "subtitles by", "amara.org", "english", "subscribe", "playing", "silence", "music"}:
+        return True
+    return False
 
 
 @app.get("/")
@@ -145,16 +167,22 @@ async def analyze_audio(
 
         # ---------- Text Feature Extraction ----------
         logger.info("[analyze] Extracting text features from transcript")
+        # Check if transcript is invalid, empty, or indicates unavailable STT / silence
+        is_invalid_transcript = is_no_speech_transcript(transcript)
+        
         try:
-            text_feats = analyze_transcript(transcript) if transcript else analyze_transcript("")
+            text_feats = analyze_transcript("" if is_invalid_transcript else transcript)
         except Exception as e:
             logger.warning(f"[analyze] Text analysis failed: {e}")
             text_feats = {"word_count": 0, "filler_count": 0, "fillers": [], "repetition_count": 0, "repeated_items": []}
 
         # ---------- WPM (Speaking Rate) ----------
         speech_minutes = audio_feats.get("speech_duration", 0) / 60
-        word_count = text_feats.get("word_count", 0)
-        wpm = round(word_count / speech_minutes) if speech_minutes > 0 else 0
+        word_count = 0 if is_invalid_transcript else text_feats.get("word_count", 0)
+        wpm = round(word_count / speech_minutes) if (speech_minutes > 0 and word_count > 0) else 0
+
+        # Detect silence / no speech
+        is_silent = is_invalid_transcript or (word_count == 0) or (audio_feats.get("speech_duration", 0) < 0.5)
 
         # ---------- Merge into single flat features dict ----------
         features = {
@@ -165,74 +193,104 @@ async def analyze_audio(
             "fillers": text_feats.get("fillers", []),
             "repetition_count": text_feats.get("repetition_count", 0),
             "repeated_items": text_feats.get("repeated_items", []),
+            "is_silent": is_silent
         }
 
         # ---------- Random Forest Hesitation Prediction ----------
         logger.info("[analyze] Running Random Forest hesitation prediction")
         hesitation_res = None
-        try:
-            wpm_val = features.get("wpm")
-            pause_val = features.get("pause_count")
-            speech_dur_val = features.get("speech_duration")
-            word_cnt_val = features.get("word_count")
+        if is_silent:
+            logger.info("[analyze] Silent or no speech detected — setting prediction to 'No Speech Detected'")
+            hesitation_res = {
+                "prediction": "No Speech Detected",
+                "probabilities": {"Low": 0.0, "Medium": 0.0, "High": 0.0},
+                "is_silent": True
+            }
+        else:
+            try:
+                wpm_val = features.get("wpm")
+                pause_val = features.get("pause_count")
+                speech_dur_val = features.get("speech_duration")
+                word_cnt_val = features.get("word_count")
 
-            if all(v is not None for v in [wpm_val, pause_val, speech_dur_val, word_cnt_val]):
-                model_inputs = {
-                    "wpm": wpm_val,
-                    "pause_count": pause_val,
-                    "speech_duration": speech_dur_val,
-                    "word_count": word_cnt_val,
-                }
-                hesitation_res = predict_hesitation(model_inputs)
-            else:
-                logger.warning("[analyze] Required features missing for hesitation prediction")
-                hesitation_res = {"error": "Waiting for speech analysis..."}
-        except Exception as err:
-            logger.error(f"[analyze] Hesitation prediction error: {err}")
-            hesitation_res = {"error": "ML prediction temporarily unavailable."}
+                if all(v is not None for v in [wpm_val, pause_val, speech_dur_val, word_cnt_val]):
+                    model_inputs = {
+                        "wpm": wpm_val,
+                        "pause_count": pause_val,
+                        "speech_duration": speech_dur_val,
+                        "word_count": word_cnt_val,
+                    }
+                    hesitation_res = predict_hesitation(model_inputs)
+                    hesitation_res["is_silent"] = False
+                else:
+                    logger.warning("[analyze] Required features missing for hesitation prediction")
+                    hesitation_res = {"error": "Waiting for speech analysis...", "is_silent": False}
+            except Exception as err:
+                logger.error(f"[analyze] Hesitation prediction error: {err}")
+                hesitation_res = {"error": "ML prediction temporarily unavailable.", "is_silent": False}
 
         # ---------- Feedback Generation ----------
         logger.info("[analyze] Generating personalized interview feedback")
         feedback_res = None
-        try:
-            pred_val = hesitation_res.get("prediction") if isinstance(hesitation_res, dict) else None
-            prob_val = hesitation_res.get("probabilities") if isinstance(hesitation_res, dict) else None
-
-            feedback_res = generate_feedback(
-                prediction=pred_val,
-                probabilities=prob_val,
-                wpm=features.get("wpm"),
-                pause_count=features.get("pause_count"),
-                speech_duration=features.get("speech_duration"),
-                word_count=features.get("word_count"),
-            )
-        except Exception as err:
-            logger.error(f"[analyze] Feedback generation error: {err}")
+        if is_silent:
             feedback_res = {
-                "summary": "Feedback unavailable due to processing error.",
-                "suggestions": ["Ensure your microphone is clear and try recording again."],
+                "summary": "No speech was detected in your recording. Please ensure your microphone is unmuted and speak clearly into it after clicking record.",
+                "suggestions": [
+                    "Check your microphone volume / input level in browser settings.",
+                    "Ensure you speak clearly into the microphone after clicking record.",
+                    "Try recording your answer again when you are ready."
+                ]
             }
+        else:
+            try:
+                pred_val = hesitation_res.get("prediction") if isinstance(hesitation_res, dict) else None
+                prob_val = hesitation_res.get("probabilities") if isinstance(hesitation_res, dict) else None
 
-        # ---------- Semantic Relevance ----------
+                feedback_res = generate_feedback(
+                    prediction=pred_val,
+                    probabilities=prob_val,
+                    wpm=features.get("wpm"),
+                    pause_count=features.get("pause_count"),
+                    speech_duration=features.get("speech_duration"),
+                    word_count=features.get("word_count"),
+                )
+            except Exception as err:
+                logger.error(f"[analyze] Feedback generation error: {err}")
+                feedback_res = {
+                    "summary": "Feedback unavailable due to processing error.",
+                    "suggestions": ["Ensure your microphone is clear and try recording again."],
+                }
+
+        # ---------- Semantic Relevance & Ideal Answer ----------
         relevance_score = None
-        if question and transcript:
+        if is_silent:
+            ideal_ans = get_ideal_answer_llm(question) if question else "No speech detected."
+            relevance_score = {
+                "score": 0,
+                "label": "No Speech Detected",
+                "ideal_answer": ideal_ans,
+                "method": "No speech detected (0 words)"
+            }
+        elif question and transcript and not is_invalid_transcript:
             try:
                 logger.info("[analyze] Calculating semantic relevance between question and transcript")
-                score = calculate_relevance(question, transcript)
-                relevance_score = {
-                    "score": score,
-                    "method": "Sentence Transformer semantic similarity"
-                }
+                relevance_score = calculate_relevance_details(question, transcript)
             except Exception as e:
                 logger.warning(f"[analyze] Semantic relevance failed: {e}")
-                relevance_score = {"score": 0, "method": "Error"}
+                relevance_score = {"score": 0, "label": "Error", "ideal_answer": "", "method": "Error"}
         elif question:
-            relevance_score = {"score": 0, "method": "Empty transcript"}
+            ideal_ans = get_ideal_answer_llm(question)
+            relevance_score = {
+                "score": 0,
+                "label": "Off-Topic / Empty",
+                "ideal_answer": ideal_ans,
+                "method": "Empty transcript"
+            }
 
         logger.info("[analyze] Analysis complete.")
         return {
             "success": True,
-            "transcript": transcript,
+            "transcript": None if is_invalid_transcript else transcript,
             "features": features,
             "hesitation": hesitation_res,
             "feedback": feedback_res,

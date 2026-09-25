@@ -7,39 +7,51 @@ import {
 import ScrollStroke from '../components/ScrollStroke';
 import { supabase } from '../supabaseClient';
 
+import { getLocalInterviews, combineInterviews } from '../utils/storage';
+
 export default function HistoryPage({ setCurrentPage }) {
-  const [historyData, setHistoryData] = useState([]);
+  const [rawHistory, setRawHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('All Sessions');
 
   useEffect(() => {
     async function fetchData() {
-      const { data, error } = await supabase
-        .from('interviews')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!error && data) {
-        const mapped = data.map(d => {
-          let icon = Code;
-          const r = (d.role || '').toLowerCase();
-          if (r.includes('ai') || r.includes('ml')) icon = Cpu;
-          else if (r.includes('backend') || r.includes('data')) icon = Database;
-          return {
-            id: d.id,
-            date: new Date(d.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            role: d.role,
-            score: d.overall_score || 0,
-            icon,
-            type: d.type,
-            questions: d.question_count || 0
-          };
-        });
-        setHistoryData(mapped);
+      let sbData = [];
+      try {
+        const { data, error } = await supabase
+          .from('interviews')
+          .select('*');
+        if (!error && data) sbData = data;
+      } catch (e) {
+        console.warn('Supabase fetch skipped:', e);
       }
+      const localData = getLocalInterviews();
+      const combined = combineInterviews(sbData, localData);
+      setRawHistory(combined);
       setLoading(false);
     }
     fetchData();
+
+    const handleUpdate = () => fetchData();
+    window.addEventListener('mockly_interviews_updated', handleUpdate);
+    return () => window.removeEventListener('mockly_interviews_updated', handleUpdate);
   }, []);
+
+  const mappedHistory = rawHistory.map(d => {
+    let icon = Code;
+    const r = (d.role || '').toLowerCase();
+    if (r.includes('ai') || r.includes('ml')) icon = Cpu;
+    else if (r.includes('backend') || r.includes('data')) icon = Database;
+    return {
+      id: d.id || d.recorded_answers?.sessionId || Math.random(),
+      date: new Date(d.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      role: d.role || 'Unknown Role',
+      score: d.overall_score || 0,
+      icon,
+      type: d.type || 'Technical',
+      questions: d.question_count || 0
+    };
+  });
 
   function scoreColor(s) {
     if (s >= 80) return 'var(--accent-teal)';
@@ -47,9 +59,15 @@ export default function HistoryPage({ setCurrentPage }) {
     return '#e89050';
   }
 
-  // Visual-only filter pills (no filtering logic)
-  const filters = ['All Sessions', 'Technical', 'Behavioral'];
-  const [activeFilter, setActiveFilter] = useState('All Sessions');
+  const filters = ['All Sessions', 'Frontend Developer', 'Software Engineer', 'Backend Developer', 'AI/ML Engineer', 'Data Analyst', 'Technical', 'Behavioral'];
+
+  const historyData = mappedHistory.filter(row => {
+    if (activeFilter === 'All Sessions') return true;
+    if (activeFilter === 'Technical' || activeFilter === 'Behavioral') {
+      return (row.type || '').toLowerCase() === activeFilter.toLowerCase();
+    }
+    return (row.role || '').toLowerCase() === activeFilter.toLowerCase();
+  });
 
   const summaryStats = [
     { icon: Layers, label: 'Total', value: `${historyData.length} Session${historyData.length !== 1 ? 's' : ''}`, color: 'var(--accent-blue)' },

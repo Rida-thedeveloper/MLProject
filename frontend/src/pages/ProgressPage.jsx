@@ -1,8 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
-import { TrendingUp, ArrowRight, BarChart2, Layers, Mic, Clock, MessageSquare, Activity, Loader2 } from 'lucide-react';
+import { TrendingUp, ArrowRight, BarChart2, Layers, Mic, Clock, MessageSquare, Activity, Loader2, Filter } from 'lucide-react';
 import ScrollStroke from '../components/ScrollStroke';
 import { supabase } from '../supabaseClient';
+import { getLocalInterviews, combineInterviews } from '../utils/storage';
 
 const DISPLAY = "'Playfair Display', serif";
 const SANS = "'DM Sans', sans-serif";
@@ -27,7 +28,7 @@ const PAD_X = 60;
 const PAD_Y = 24;
 const CHART_W = SVG_W - PAD_X * 2;
 const CHART_H = SVG_H - PAD_Y * 2;
-const SCORE_MIN = 30; // updated minimum to bound realistic scores which can be low
+const SCORE_MIN = 30;
 const SCORE_MAX = 100;
 
 function scoreToY(score) {
@@ -88,27 +89,52 @@ function MetricRow({ metric, delay }) {
   );
 }
 
-export default function ProgressPage({ setCurrentPage }) {
+export default function ProgressPage({ setCurrentPage, interviewSetup }) {
   const chartRef = useRef(null);
   const chartInView = useInView(chartRef, { once: true });
 
-  const [historyData, setHistoryData] = useState([]);
+  const [rawHistory, setRawHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedRole, setSelectedRole] = useState(interviewSetup?.role || 'All Roles');
+
+  const availableRoles = [
+    'All Roles',
+    'Software Engineer',
+    'Frontend Developer',
+    'Backend Developer',
+    'AI/ML Engineer',
+    'Data Analyst'
+  ];
 
   useEffect(() => {
     async function fetchData() {
-      const { data, error } = await supabase
-        .from('interviews')
-        .select('*')
-        .order('created_at', { ascending: true }); // chronological order for progress line
-
-      if (!error && data) {
-        setHistoryData(data);
+      let sbData = [];
+      try {
+        const { data, error } = await supabase
+          .from('interviews')
+          .select('*');
+        if (!error && data) sbData = data;
+      } catch (e) {
+        console.warn('Supabase fetch skipped:', e);
       }
+      const localData = getLocalInterviews();
+      const combined = combineInterviews(sbData, localData);
+      // Sort chronologically (oldest first for progress trend line)
+      combined.sort((a, b) => new Date(a.created_at || Date.now()) - new Date(b.created_at || Date.now()));
+      setRawHistory(combined);
       setLoading(false);
     }
+
     fetchData();
+
+    const handleUpdate = () => fetchData();
+    window.addEventListener('mockly_interviews_updated', handleUpdate);
+    return () => window.removeEventListener('mockly_interviews_updated', handleUpdate);
   }, []);
+
+  const filteredHistory = selectedRole === 'All Roles'
+    ? rawHistory
+    : rawHistory.filter(d => (d.role || '').toLowerCase() === selectedRole.toLowerCase());
 
   const section = (i) => ({
     initial: { opacity: 0, y: 28 },
@@ -124,50 +150,21 @@ export default function ProgressPage({ setCurrentPage }) {
     );
   }
 
-  // ==== EMPTY STATE ==== //
-  if (historyData.length === 0) {
-    return (
-      <div style={{ position: 'relative', minHeight: '100vh', isolation: 'isolate', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 24px' }}>
-
-        <motion.div {...section(0)} style={{ marginBottom: 24 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(201,168,76,0.08)', border: '1px dashed rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
-            <TrendingUp size={28} color="var(--gold)" />
-          </div>
-        </motion.div>
-
-        <motion.h1 {...section(1)} style={{ fontFamily: DISPLAY, fontSize: 'clamp(28px, 4vw, 36px)', fontWeight: 700, fontStyle: 'italic', color: 'var(--text-primary)', margin: '0 0 12px' }}>
-          No Analytics Yet
-        </motion.h1>
-
-        <motion.p {...section(2)} style={{ fontSize: 14, color: 'var(--text-secondary)', fontFamily: SANS, margin: '0 0 32px', maxWidth: 400, lineHeight: 1.6 }}>
-          Complete your first mock interview to establish a baseline. Your progress and trends will be tracked here.
-        </motion.p>
-
-        <motion.div {...section(3)}>
-          <button className="btn-gold" onClick={() => setCurrentPage('setup')} style={{ padding: '14px 32px' }}>
-            Start an Interview <ArrowRight size={15} />
-          </button>
-        </motion.div>
-      </div>
-    );
-  }
-
   // ==== PROGRESS LOGIC ==== //
-  const progressData = historyData.map((d, i) => {
-    return {
-      label: `Session ${i + 1}`,
-      score: d.overall_score || 0,
-      date: new Date(d.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      role: d.role || 'Unknown'
-    };
-  });
+  const progressData = filteredHistory.map((d, i) => ({
+    label: `Session ${i + 1}`,
+    score: d.overall_score || 0,
+    date: new Date(d.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    role: d.role || 'Unknown'
+  }));
 
-  const delta = progressData[progressData.length - 1].score - progressData[0].score;
+  const hasData = progressData.length > 0;
+  const delta = hasData ? (progressData[progressData.length - 1].score - progressData[0].score) : 0;
   const points = progressData.map((d, i) => ({ x: indexToX(i, progressData.length), y: scoreToY(d.score), ...d }));
   const polyline = points.map(p => `${p.x},${p.y}`).join(' ');
 
-  const firstRec = historyData[0];
-  const lastRec = historyData[historyData.length - 1];
+  const firstRec = filteredHistory[0] || {};
+  const lastRec = filteredHistory[filteredHistory.length - 1] || {};
 
   const skillMetrics = [
     { label: 'Speaking Pace', first: firstRec.avg_wpm || 0, last: lastRec.avg_wpm || 0, unit: ' WPM', color: '#7ab8e8', icon: Mic },
@@ -193,16 +190,62 @@ export default function ProgressPage({ setCurrentPage }) {
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px', position: 'relative', zIndex: 2 }}>
 
         {/* Header */}
-        <motion.div {...section(0)} style={{ textAlign: 'center', marginBottom: 48 }}>
+        <motion.div {...section(0)} style={{ textAlign: 'center', marginBottom: 36 }}>
           <div className="tag-gold" style={{ marginBottom: 14, display: 'inline-flex' }}>Analytics &amp; Trends</div>
           <h1 style={{ fontFamily: DISPLAY, fontSize: 'clamp(30px, 5vw, 44px)', fontWeight: 700, fontStyle: 'italic', color: 'var(--text-primary)', margin: '0 0 12px' }}>
             Interview Progress
           </h1>
-          <p style={{ fontSize: 14, color: 'var(--text-secondary)', fontFamily: SANS, margin: 0 }}>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', fontFamily: SANS, margin: '0 0 24px' }}>
             Track your performance trajectory across your mock sessions.
           </p>
-          <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, var(--gold), transparent)', margin: '24px auto 0', maxWidth: 200 }} />
+
+          {/* Role Filter Pills */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 8 }}>
+            {availableRoles.map(r => {
+              const active = selectedRole === r;
+              return (
+                <button
+                  key={r}
+                  onClick={() => setSelectedRole(r)}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontFamily: SANS,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    background: active ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${active ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                    color: active ? 'var(--gold-light)' : 'var(--text-muted)',
+                    transition: 'all 0.18s ease',
+                  }}
+                >
+                  {r}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, var(--gold), transparent)', margin: '20px auto 0', maxWidth: 200 }} />
         </motion.div>
+
+        {!hasData ? (
+          <div style={{ textAlign: 'center', padding: '48px 24px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 16 }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(201,168,76,0.08)', border: '1px dashed rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <TrendingUp size={24} color="var(--gold)" />
+            </div>
+            <h2 style={{ fontFamily: DISPLAY, fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 8px' }}>
+              No Progress Data for {selectedRole}
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: SANS, margin: '0 0 24px', maxWidth: 360, marginInline: 'auto', lineHeight: 1.6 }}>
+              Complete a mock interview session for <strong style={{ color: 'var(--gold)' }}>{selectedRole}</strong> to view tailored progress charts.
+            </p>
+            <button className="btn-gold" onClick={() => setCurrentPage('setup')} style={{ padding: '12px 28px' }}>
+              Start Session <ArrowRight size={14} />
+            </button>
+          </div>
+        ) : (
+          <>
 
         {/* KPI Row */}
         <motion.div {...section(1)} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 40 }}>
@@ -432,8 +475,10 @@ export default function ProgressPage({ setCurrentPage }) {
             <ArrowRight size={15} />
           </motion.button>
         </motion.div>
+        </>
+        )}
 
-      </div >
-    </div >
+      </div>
+    </div>
   );
 }

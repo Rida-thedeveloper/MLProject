@@ -126,7 +126,7 @@ function ProbBar({ label, value, color }) {
 }
 
 /* ─── Speech Analysis Panel ─────────────────────────────────── */
-function SpeechAnalysisPanel({ features, transcript, hesitation, feedback, isLoading, error }) {
+function SpeechAnalysisPanel({ features, transcript, hesitation, feedback, relevance, isLoading, error }) {
   if (isLoading) {
     return (
       <motion.div
@@ -204,15 +204,16 @@ function SpeechAnalysisPanel({ features, transcript, hesitation, feedback, isLoa
 
   if (!features) return null;
 
+  const isSilent = features.is_silent || hesitation?.is_silent || hesitation?.prediction === 'No Speech Detected';
   const silencePct = features.silence_ratio != null ? `${(features.silence_ratio * 100).toFixed(1)}%` : '—';
 
   const metrics = [
-    { label: 'Speaking Rate', value: features.wpm ?? '—', sub: 'words / min', color: '#c9a84c', icon: TrendingUp },
+    { label: 'Speaking Rate', value: isSilent ? '0' : (features.wpm ?? '—'), sub: 'words / min', color: '#c9a84c', icon: TrendingUp },
     { label: 'Pause Count', value: features.pause_count ?? '—', sub: 'detected pauses', color: '#7ab8e8', icon: BarChart2 },
     { label: 'Avg Pause', value: features.average_pause != null ? `${features.average_pause}s` : '—', sub: 'per silence', color: '#3db8a0', icon: Activity },
     { label: 'Silence Ratio', value: silencePct, sub: 'of total recording', color: '#e89050', icon: Radio },
-    { label: 'Filler Words', value: features.filler_count ?? '—', sub: features.fillers?.length ? features.fillers.join(', ') : 'none detected', color: '#d46a6a', icon: MessageSquare },
-    { label: 'Repetitions', value: features.repetition_count ?? '—', sub: features.repeated_items?.length ? `"${features.repeated_items[0]}"…` : 'none detected', color: '#b07ae8', icon: Zap },
+    { label: 'Filler Words', value: isSilent ? '0' : (features.filler_count ?? '—'), sub: features.fillers?.length ? features.fillers.join(', ') : 'none detected', color: '#d46a6a', icon: MessageSquare },
+    { label: 'Repetitions', value: isSilent ? '0' : (features.repetition_count ?? '—'), sub: features.repeated_items?.length ? `"${features.repeated_items[0]}"…` : 'none detected', color: '#b07ae8', icon: Zap },
   ];
 
   return (
@@ -221,6 +222,90 @@ function SpeechAnalysisPanel({ features, transcript, hesitation, feedback, isLoa
       animate={{ opacity: 1 }}
       style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.06)' }}
     >
+      {/* Silence Warning Banner if user was quiet */}
+      {isSilent && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            background: 'rgba(212,106,106,0.08)',
+            border: '1px solid rgba(212,106,106,0.25)',
+            borderRadius: 12, padding: '12px 16px', marginBottom: 18,
+            display: 'flex', alignItems: 'center', gap: 10
+          }}
+        >
+          <AlertCircle size={16} color="#d46a6a" />
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#f09090', fontFamily: "'DM Sans', sans-serif" }}>
+            No Speech Detected: Microphone recorded silence or un-audible audio.
+          </span>
+        </motion.div>
+      )}
+
+      {/* Answer Relevance Card */}
+      {relevance && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          style={{
+            background: relevance.score >= 75 ? 'rgba(61,184,160,0.06)' : (relevance.score >= 40 ? 'rgba(201,168,76,0.06)' : 'rgba(212,106,106,0.06)'),
+            border: `1px solid ${relevance.score >= 75 ? 'rgba(61,184,160,0.25)' : (relevance.score >= 40 ? 'rgba(201,168,76,0.25)' : 'rgba(212,106,106,0.25)')}`,
+            borderRadius: 14, padding: '16px 20px', marginBottom: 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Award size={18} color={relevance.score >= 75 ? '#3db8a0' : (relevance.score >= 40 ? '#c9a84c' : '#d46a6a')} />
+            <div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>
+                Answer Relevance
+              </div>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, color: '#fff' }}>
+                {relevance.label || (relevance.score >= 75 ? 'Highly Relevant' : (relevance.score >= 40 ? 'Moderately Relevant' : 'Off-Topic / Low Relevance'))}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 800, color: relevance.score >= 75 ? '#3db8a0' : (relevance.score >= 40 ? '#c9a84c' : '#d46a6a') }}>
+              {relevance.score}%
+            </span>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Suggested Ideal Answer Card */}
+      {relevance?.ideal_answer && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          style={{
+            background: 'rgba(201,168,76,0.05)',
+            border: '1px solid rgba(201,168,76,0.25)',
+            borderRadius: 14, padding: '16px 20px', marginBottom: 16,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <Zap size={15} color="#c9a84c" />
+            <span style={{
+              fontFamily: "'DM Mono', monospace", fontSize: 10,
+              letterSpacing: '0.16em', textTransform: 'uppercase',
+              color: '#c9a84c', fontWeight: 700,
+            }}>
+              Suggested Ideal Answer
+            </span>
+          </div>
+          <p style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 13, fontWeight: 500,
+            color: 'rgba(255,255,255,0.85)',
+            lineHeight: 1.6, margin: 0,
+          }}>
+            {relevance.ideal_answer}
+          </p>
+        </motion.div>
+      )}
+
       {/* Section header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
         <div style={{
@@ -289,10 +374,10 @@ function SpeechAnalysisPanel({ features, transcript, hesitation, feedback, isLoa
               {hesitation.prediction && (
                 <span style={{
                   padding: '3px 10px', borderRadius: 999,
-                  background: 'rgba(201,168,76,0.1)',
-                  border: '1px solid rgba(201,168,76,0.25)',
+                  background: isSilent ? 'rgba(212,106,106,0.1)' : 'rgba(201,168,76,0.1)',
+                  border: `1px solid ${isSilent ? 'rgba(212,106,106,0.25)' : 'rgba(201,168,76,0.25)'}`,
                   fontFamily: "'DM Mono', monospace",
-                  fontSize: 10, fontWeight: 600, color: '#c9a84c',
+                  fontSize: 10, fontWeight: 600, color: isSilent ? '#d46a6a' : '#c9a84c',
                   letterSpacing: '0.08em',
                 }}>
                   {hesitation.prediction}
@@ -301,7 +386,7 @@ function SpeechAnalysisPanel({ features, transcript, hesitation, feedback, isLoa
             </div>
           </div>
 
-          {hesitation.probabilities && (
+          {hesitation.probabilities && !isSilent && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <ProbBar label="Low" value={hesitation.probabilities['Low']} color="#3db8a0" />
               <ProbBar label="Medium" value={hesitation.probabilities['Medium']} color="#e8c96a" />
@@ -1250,6 +1335,7 @@ export default function InterviewScreenPage({
                   transcript={currentAnswer.transcript}
                   hesitation={currentAnswer.hesitation}
                   feedback={currentAnswer.feedback}
+                  relevance={currentAnswer.relevance}
                   isLoading={currentAnswer.isAnalyzing}
                   error={currentAnswer.analyzeError}
                 />

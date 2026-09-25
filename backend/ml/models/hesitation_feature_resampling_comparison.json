@@ -1,0 +1,290 @@
+{
+    "A. Baseline (4 Features, No Resampling)": {
+        "experiment_id": "A",
+        "feature_count": 4,
+        "features_used": [
+            "wpm",
+            "pause_count",
+            "speech_duration",
+            "word_count"
+        ],
+        "resampling_method": "None",
+        "accuracy": 0.481,
+        "macro_precision": 0.3209,
+        "macro_recall": 0.3343,
+        "macro_f1": 0.3274,
+        "weighted_f1": 0.4711,
+        "per_class": {
+            "Low": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 41
+            },
+            "Medium": {
+                "precision": 0.4892,
+                "recall": 0.5144,
+                "f1": 0.5015,
+                "support": 486
+            },
+            "High": {
+                "precision": 0.4734,
+                "recall": 0.4884,
+                "f1": 0.4807,
+                "support": 473
+            }
+        },
+        "feature_importances": {
+            "wpm": 0.2447,
+            "pause_count": 0.1473,
+            "speech_duration": 0.3337,
+            "word_count": 0.2744
+        },
+        "confusion_matrix": {
+            "classes": [
+                "Low",
+                "Medium",
+                "High"
+            ],
+            "matrix": [
+                [
+                    0,
+                    19,
+                    22
+                ],
+                [
+                    1,
+                    250,
+                    235
+                ],
+                [
+                    0,
+                    242,
+                    231
+                ]
+            ]
+        }
+    },
+    "B. Expanded (8 Features, No Resampling)": {
+        "experiment_id": "B",
+        "feature_count": 8,
+        "features_used": [
+            "wpm",
+            "pause_count",
+            "speech_duration",
+            "word_count",
+            "words_per_second",
+            "pauses_per_minute",
+            "words_per_pause",
+            "pause_density"
+        ],
+        "resampling_method": "None",
+        "accuracy": 0.481,
+        "macro_precision": 0.3204,
+        "macro_recall": 0.3342,
+        "macro_f1": 0.3271,
+        "weighted_f1": 0.4707,
+        "per_class": {
+            "Low": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 41
+            },
+            "Medium": {
+                "precision": 0.4894,
+                "recall": 0.5247,
+                "f1": 0.5065,
+                "support": 486
+            },
+            "High": {
+                "precision": 0.4718,
+                "recall": 0.4778,
+                "f1": 0.4748,
+                "support": 473
+            }
+        },
+        "feature_importances": {
+            "wpm": 0.1347,
+            "pause_count": 0.0494,
+            "speech_duration": 0.1412,
+            "word_count": 0.1279,
+            "words_per_second": 0.1445,
+            "pauses_per_minute": 0.1347,
+            "words_per_pause": 0.1356,
+            "pause_density": 0.132
+        },
+        "confusion_matrix": {
+            "classes": [
+                "Low",
+                "Medium",
+                "High"
+            ],
+            "matrix": [
+                [
+                    0,
+                    19,
+                    22
+                ],
+                [
+                    0,
+                    255,
+                    231
+                ],
+                [
+                    0,
+                    247,
+                    226
+                ]
+            ]
+        }
+    },
+    "C. Expanded (8 Features + RandomOverSampler)": {
+        "experiment_id": "C",
+        "feature_count": 8,
+        "features_used": [
+            "wpm",
+            "pause_count",
+            "speech_duration",
+            "word_count",
+            "words_per_second",
+            "pauses_per_minute",
+            "words_per_pause",
+            "pause_density"
+        ],
+        "resampling_method": "RandomOverSampler",
+        "accuracy": 0.486,
+        "macro_precision": 0.3259,
+        "macro_recall": 0.3378,
+        "macro_f1": 0.3317,
+        "weighted_f1": 0.4773,
+        "per_class": {
+            "Low": {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 41
+            },
+            "Medium": {
+                "precision": 0.497,
+                "recall": 0.5165,
+                "f1": 0.5066,
+                "support": 486
+            },
+            "High": {
+                "precision": 0.4806,
+                "recall": 0.4968,
+                "f1": 0.4886,
+                "support": 473
+            }
+        },
+        "feature_importances": {
+            "wpm": 0.1381,
+            "pause_count": 0.0518,
+            "speech_duration": 0.1408,
+            "word_count": 0.1313,
+            "words_per_second": 0.1426,
+            "pauses_per_minute": 0.132,
+            "words_per_pause": 0.1344,
+            "pause_density": 0.1292
+        },
+        "confusion_matrix": {
+            "classes": [
+                "Low",
+                "Medium",
+                "High"
+            ],
+            "matrix": [
+                [
+                    0,
+                    20,
+                    21
+                ],
+                [
+                    2,
+                    251,
+                    233
+                ],
+                [
+                    4,
+                    234,
+                    235
+                ]
+            ]
+        }
+    },
+    "D. Expanded (8 Features + SMOTE)": {
+        "experiment_id": "D",
+        "feature_count": 8,
+        "features_used": [
+            "wpm",
+            "pause_count",
+            "speech_duration",
+            "word_count",
+            "words_per_second",
+            "pauses_per_minute",
+            "words_per_pause",
+            "pause_density"
+        ],
+        "resampling_method": "SMOTE",
+        "accuracy": 0.451,
+        "macro_precision": 0.3475,
+        "macro_recall": 0.3582,
+        "macro_f1": 0.3492,
+        "weighted_f1": 0.4577,
+        "per_class": {
+            "Low": {
+                "precision": 0.0779,
+                "recall": 0.1463,
+                "f1": 0.1017,
+                "support": 41
+            },
+            "Medium": {
+                "precision": 0.4912,
+                "recall": 0.4588,
+                "f1": 0.4745,
+                "support": 486
+            },
+            "High": {
+                "precision": 0.4733,
+                "recall": 0.4693,
+                "f1": 0.4713,
+                "support": 473
+            }
+        },
+        "feature_importances": {
+            "wpm": 0.1442,
+            "pause_count": 0.1306,
+            "speech_duration": 0.1279,
+            "word_count": 0.1327,
+            "words_per_second": 0.1284,
+            "pauses_per_minute": 0.1084,
+            "words_per_pause": 0.1223,
+            "pause_density": 0.1055
+        },
+        "confusion_matrix": {
+            "classes": [
+                "Low",
+                "Medium",
+                "High"
+            ],
+            "matrix": [
+                [
+                    6,
+                    16,
+                    19
+                ],
+                [
+                    35,
+                    223,
+                    228
+                ],
+                [
+                    36,
+                    215,
+                    222
+                ]
+            ]
+        }
+    }
+}

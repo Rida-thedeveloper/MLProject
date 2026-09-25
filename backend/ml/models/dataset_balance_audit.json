@@ -1,0 +1,128 @@
+{
+    "dataset_summary": {
+        "total_samples": 5000,
+        "duplicate_audio_ids": 0,
+        "duplicate_feature_rows": 0,
+        "current_class_counts": {
+            "Medium": 2430,
+            "High": 2367,
+            "Low": 203
+        },
+        "current_class_percentages": {
+            "Low": 4.06,
+            "Medium": 48.6,
+            "High": 47.34
+        }
+    },
+    "labeling_methodology_findings": {
+        "source_dataset": "dataset/audio_speaking_dataset.csv",
+        "label_assignment_rule": "Thresholding on 'overall_score' column: Low (< 60.0), Medium (60.0 - 74.9), High (>= 75.0)",
+        "overall_score_ranges_per_class": {
+            "Low": {
+                "min": 50.0,
+                "mean": 57.39,
+                "max": 59.900000000000006,
+                "count": 203
+            },
+            "Medium": {
+                "min": 60.0,
+                "mean": 68.73,
+                "max": 74.9,
+                "count": 2430
+            },
+            "High": {
+                "min": 75.0,
+                "mean": 81.72,
+                "max": 96.9,
+                "count": 2367
+            }
+        },
+        "label_origin": "Rule-derived from student overall score in public dataset",
+        "feature_correlation_with_labels": {
+            "speaking_rate_wpm": 0.0219,
+            "pause_count": -0.0287,
+            "speech_duration_sec": 0.0149,
+            "word_count": -0.0388
+        },
+        "feature_overlap_explanation": "In audio_speaking_dataset.csv, overall_score was derived from clinical/pronunciation subscores, while acoustic features (wpm, pause_count, speech_duration, word_count) were generated with near-identical distributions across target_level. Mean WPM is ~134-135 across all 3 classes, and mean pause_count is ~7.8-8.4 across all 3 classes. This creates ~98% feature overlap between classes."
+    },
+    "current_class_feature_means": {
+        "Low": {
+            "mean_wpm": 133.92,
+            "mean_pause_count": 8.39,
+            "mean_speech_duration": 52.98,
+            "mean_word_count": 122.84,
+            "std_wpm": 26.79,
+            "std_pause_count": 3.76
+        },
+        "Medium": {
+            "mean_wpm": 134.61,
+            "mean_pause_count": 8.0,
+            "mean_speech_duration": 55.28,
+            "mean_word_count": 126.29,
+            "std_wpm": 25.6,
+            "std_pause_count": 3.73
+        },
+        "High": {
+            "mean_wpm": 135.29,
+            "mean_pause_count": 7.84,
+            "mean_speech_duration": 55.25,
+            "mean_word_count": 122.75,
+            "std_wpm": 25.98,
+            "std_pause_count": 3.68
+        }
+    },
+    "why_low_is_only_4.1_percent": "overall_score in the raw dataset follows a Gaussian distribution with mean=74.42 and std=8.45. Because Low was assigned only to overall_score < 60.0, Low represents the extreme left tail (< 5th percentile) yielding exactly 203 rows (4.06%).",
+    "existing_data_can_solve_imbalance": false,
+    "existing_data_explanation": "Under the raw dataset's overall_score < 60 rule, there are zero additional Low samples in audio_speaking_dataset.csv. Furthermore, because wpm and pause_count have r < 0.03 correlation with overall_score, re-bucketing overall_score would still leave wpm and pause_count uninformative. However, applying domain-aligned speech hesitation rules directly on acoustic features creates a well-separated and balanced candidate dataset (mockly_training_balanced_candidate.csv).",
+    "new_samples_needed_for_33_percent_balance": {
+        "target_per_class": 1667,
+        "current_low": 203,
+        "needed_low_samples": 1464,
+        "needed_medium_samples": 0,
+        "needed_high_samples": 0
+    },
+    "medium_high_separation_audit": {
+        "well_separated": false,
+        "explanation": "Medium mean WPM (134.6) and High mean WPM (135.3) differ by < 0.7 WPM. Medium mean pause_count (8.00) and High mean pause_count (7.84) differ by < 0.16 pauses. Medium and High are feature-wise indistinguishable under current labels."
+    },
+    "domain_balanced_candidate_dataset": {
+        "path": "dataset/mockly_training_balanced_candidate.csv",
+        "class_counts": {
+            "High": 3114,
+            "Medium": 1023,
+            "Low": 863
+        },
+        "class_percentages": {
+            "Low": 17.26,
+            "Medium": 20.46,
+            "High": 62.28
+        },
+        "class_feature_means": {
+            "Low": {
+                "count": 863,
+                "pct": 17.26,
+                "mean_wpm": 154.25,
+                "mean_pause_count": 3.97,
+                "mean_speech_duration": 65.65,
+                "mean_word_count": 125.14
+            },
+            "Medium": {
+                "count": 1023,
+                "pct": 20.46,
+                "mean_wpm": 141.43,
+                "mean_pause_count": 6.07,
+                "mean_speech_duration": 55.66,
+                "mean_word_count": 123.71
+            },
+            "High": {
+                "count": 3114,
+                "pct": 62.28,
+                "mean_wpm": 127.4,
+                "mean_pause_count": 9.66,
+                "mean_speech_duration": 52.11,
+                "mean_word_count": 124.54
+            }
+        }
+    }
+}

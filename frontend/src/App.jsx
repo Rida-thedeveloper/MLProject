@@ -30,23 +30,33 @@ export default function App() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setUser({ name: session.user.user_metadata?.first_name || session.user.email.split('@')[0] || 'User', email: session.user.email });
-        setAuthDone(true);
-      }
-    });
+    try {
+      supabase.auth.getSession()
+        .then(res => {
+          if (res?.data?.session) {
+            const session = res.data.session;
+            setUser({
+              name: session.user.user_metadata?.first_name || session.user.email?.split('@')[0] || 'User',
+              email: session.user.email
+            });
+            setAuthDone(true);
+          }
+        })
+        .catch(err => console.warn('Supabase getSession skipped:', err));
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setUser({ name: session.user.user_metadata?.first_name || session.user.email.split('@')[0] || 'User', email: session.user.email });
-        setAuthDone(true);
-      } else {
-        setUser(null);
-        setAuthDone(false);
-      }
-    });
-    return () => subscription.unsubscribe();
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session) {
+          setUser({
+            name: session.user.user_metadata?.first_name || session.user.email?.split('@')[0] || 'User',
+            email: session.user.email
+          });
+          setAuthDone(true);
+        }
+      });
+      return () => subscription?.unsubscribe();
+    } catch (err) {
+      console.warn('Supabase auth listener setup failed:', err);
+    }
   }, []);
 
   const [interviewSetup, setInterviewSetup] = useState({
@@ -105,7 +115,7 @@ export default function App() {
       case 'history':
         return <HistoryPage setCurrentPage={setCurrentPage} />;
       case 'progress':
-        return <ProgressPage setCurrentPage={setCurrentPage} />;
+        return <ProgressPage setCurrentPage={setCurrentPage} interviewSetup={interviewSetup} />;
       default:
         return <LandingPage setCurrentPage={setCurrentPage} />;
     }

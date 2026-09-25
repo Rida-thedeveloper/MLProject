@@ -80,6 +80,29 @@ def transcribe_audio_file(audio_path: str) -> str:
 
     api_key = os.environ.get("GROQ_API_KEY", "").strip()
     if not api_key:
+        # Fallback: attempt reading from backend/.env or root .env file directly
+        possible_paths = [
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"),
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env"),
+        ]
+        for p in possible_paths:
+            if os.path.exists(p):
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if line and not line.startswith("#") and "=" in line:
+                                k, v = line.split("=", 1)
+                                if k.strip() == "GROQ_API_KEY":
+                                    api_key = v.strip().strip("'\"")
+                                    os.environ["GROQ_API_KEY"] = api_key
+                                    break
+                except Exception as err:
+                    logger.warning(f"Failed to read .env at {p}: {err}")
+            if api_key:
+                break
+
+    if not api_key:
         logger.error("[Groq STT] GROQ_API_KEY is not set in the environment.")
         return "Transcription unavailable: GROQ_API_KEY not configured on the server."
 

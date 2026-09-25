@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabaseClient';
+import { saveLocalInterview } from '../utils/storage';
 import {
   Award,
   AlertCircle,
@@ -246,39 +247,46 @@ export default function FinalReportPage({ setCurrentPage, recordedAnswers, inter
       }
 
       async function saveInterview() {
+        const record = {
+          id: sId !== 'legacy' ? sId : crypto.randomUUID(),
+          user_id: 'local_user',
+          role: interviewSetup?.role || 'Software Engineer',
+          difficulty: interviewSetup?.difficulty || 'Intermediate',
+          type: interviewSetup?.type || 'Technical',
+          question_count: answerCount,
+          overall_score: score,
+          avg_wpm: avgWpm,
+          total_fillers: totalFillers,
+          total_pauses: totalPauses,
+          primary_hesitation: primaryHesitation,
+          avg_relevance: avgRelevance,
+          recorded_answers: { ...recordedAnswers, sessionId: sId },
+          created_at: new Date().toISOString()
+        };
+
+        saveLocalInterview(record);
+
         try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) return;
-
-          if (sId !== 'legacy') {
-            const { data: existing } = await supabase
-              .from('interviews')
-              .select('id')
-              .eq('user_id', user.id)
-              .eq('recorded_answers->>sessionId', sId);
-
-            if (existing && existing.length > 0) {
-              setHasSaved(true);
-              return;
-            }
+          const { data } = await supabase.auth.getUser();
+          if (data?.user) {
+            record.user_id = data.user.id;
+            await supabase.from('interviews').insert({
+              user_id: data.user.id,
+              role: record.role,
+              difficulty: record.difficulty,
+              type: record.type,
+              question_count: record.question_count,
+              overall_score: record.overall_score,
+              avg_wpm: record.avg_wpm,
+              total_fillers: record.total_fillers,
+              total_pauses: record.total_pauses,
+              primary_hesitation: record.primary_hesitation,
+              avg_relevance: record.avg_relevance,
+              recorded_answers: record.recorded_answers
+            });
           }
-
-          await supabase.from('interviews').insert({
-            user_id: user.id,
-            role: interviewSetup?.role || 'Unknown',
-            difficulty: interviewSetup?.difficulty || 'Standard',
-            type: interviewSetup?.type || 'Standard',
-            question_count: answerCount,
-            overall_score: score,
-            avg_wpm: avgWpm,
-            total_fillers: totalFillers,
-            total_pauses: totalPauses,
-            primary_hesitation: primaryHesitation,
-            avg_relevance: avgRelevance,
-            recorded_answers: { ...recordedAnswers, sessionId: sId }
-          });
         } catch (e) {
-          console.error('Failed to save interview', e);
+          console.warn('Supabase save skipped:', e);
         }
       }
       saveInterview();

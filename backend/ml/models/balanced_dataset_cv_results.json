@@ -1,0 +1,708 @@
+{
+  "experiment_name": "Balanced Dataset 5-Fold CV Evaluation",
+  "candidate_dataset": "C:\\Users\\MMC\\.gemini\\antigravity\\scratch\\Mockly\\dataset\\mockly_training_balanced_candidate.csv",
+  "n_samples": 5000,
+  "rf_params": {
+    "n_estimators": 200,
+    "max_depth": null,
+    "class_weight": "balanced",
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "leakage_audit": {
+    "duplicate_audio_ids": 0,
+    "class_distribution": {
+      "High": 3114,
+      "Medium": 1023,
+      "Low": 863
+    },
+    "class_percentages": {
+      "High": 62.28,
+      "Medium": 20.46,
+      "Low": 17.26
+    },
+    "reproducibility": {
+      "total": 5000,
+      "labels_match_rule": 2961,
+      "labels_mismatch_rule": 2039,
+      "reproducibility_pct": 59.22
+    },
+    "target_leakage_warning": "DIRECT TARGET LEAKAGE DETECTED: 'wpm' and 'pause_count' are used BOTH in the domain labeling rule (ppm=pause_count/speech_duration/60; rule checks wpm>=130, wpm<=115, pause_count>=10) AND as model input features in Experiments A and B. A model trained on these features will learn to replicate the rule, not generalize to real speech. High accuracy in A/B reflects rule-memorization, NOT genuine signal. Experiment C (leakage-free) isolates the true independent signal.",
+    "label_generating_features": [
+      "pauses_per_minute",
+      "words_per_pause",
+      "pause_count",
+      "words_per_second",
+      "wpm",
+      "pause_density"
+    ],
+    "safe_independent_features": [
+      "speech_duration",
+      "word_count"
+    ]
+  },
+  "baseline_reference_original_dataset": {
+    "source": "hesitation_cv_threshold_comparison.json (Experiment 3)",
+    "dataset": "original mockly_training.csv (5000 rows, overall_score labels)",
+    "mean_accuracy": 0.4768,
+    "std_accuracy": 0.006,
+    "mean_macro_f1": 0.3247,
+    "low_mean_recall": 0.0,
+    "low_mean_f1": 0.0
+  },
+  "results": {
+    "experiment_A": {
+      "experiment": "Experiment_A_4features",
+      "features": [
+        "wpm",
+        "pause_count",
+        "speech_duration",
+        "word_count"
+      ],
+      "n_features": 4,
+      "cv_folds": 5,
+      "summary": {
+        "mean_accuracy": 0.9956,
+        "std_accuracy": 0.0019,
+        "mean_macro_f1": 0.9946,
+        "std_macro_f1": 0.0025,
+        "mean_weighted_f1": 0.9956,
+        "std_weighted_f1": 0.0019,
+        "mean_macro_recall": 0.9961,
+        "std_macro_recall": 0.0026
+      },
+      "per_class": {
+        "Low": {
+          "mean_precision": 0.9943,
+          "std_precision": 0.0088,
+          "mean_recall": 1.0,
+          "std_recall": 0.0,
+          "mean_f1": 0.9971,
+          "std_f1": 0.0044
+        },
+        "Medium": {
+          "mean_precision": 0.9856,
+          "std_precision": 0.01,
+          "mean_recall": 0.9931,
+          "std_recall": 0.0091,
+          "mean_f1": 0.9893,
+          "std_f1": 0.0046
+        },
+        "High": {
+          "mean_precision": 0.9994,
+          "std_precision": 0.0008,
+          "mean_recall": 0.9952,
+          "std_recall": 0.0034,
+          "mean_f1": 0.9973,
+          "std_f1": 0.0017
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "Low",
+          "Medium",
+          "High"
+        ],
+        "matrix": [
+          [
+            863,
+            0,
+            0
+          ],
+          [
+            5,
+            1016,
+            2
+          ],
+          [
+            0,
+            15,
+            3099
+          ]
+        ]
+      },
+      "feature_importance": {
+        "wpm": 0.3177,
+        "pause_count": 0.4594,
+        "speech_duration": 0.2069,
+        "word_count": 0.016
+      },
+      "fold_details": [
+        {
+          "fold": 1,
+          "accuracy": 0.996,
+          "macro_f1": 0.9957058507783145,
+          "weighted_f1": 0.996012882447665,
+          "macro_recall": 0.9978598180845372,
+          "per_class": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 172
+            },
+            "Medium": {
+              "precision": 0.9809,
+              "recall": 1.0,
+              "f1": 0.9903,
+              "support": 205
+            },
+            "High": {
+              "precision": 1.0,
+              "recall": 0.9936,
+              "f1": 0.9968,
+              "support": 623
+            }
+          }
+        },
+        {
+          "fold": 2,
+          "accuracy": 0.995,
+          "macro_f1": 0.9946409327883653,
+          "weighted_f1": 0.9950200479597682,
+          "macro_recall": 0.9973247726056714,
+          "per_class": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 172
+            },
+            "Medium": {
+              "precision": 0.9762,
+              "recall": 1.0,
+              "f1": 0.988,
+              "support": 205
+            },
+            "High": {
+              "precision": 1.0,
+              "recall": 0.992,
+              "f1": 0.996,
+              "support": 623
+            }
+          }
+        },
+        {
+          "fold": 3,
+          "accuracy": 0.994,
+          "macro_f1": 0.9907049356621055,
+          "weighted_f1": 0.9939931541725601,
+          "macro_recall": 0.9912950198806114,
+          "per_class": {
+            "Low": {
+              "precision": 0.9774,
+              "recall": 1.0,
+              "f1": 0.9886,
+              "support": 173
+            },
+            "Medium": {
+              "precision": 0.995,
+              "recall": 0.9755,
+              "f1": 0.9851,
+              "support": 204
+            },
+            "High": {
+              "precision": 0.9984,
+              "recall": 0.9984,
+              "f1": 0.9984,
+              "support": 623
+            }
+          }
+        },
+        {
+          "fold": 4,
+          "accuracy": 0.994,
+          "macro_f1": 0.993535325109829,
+          "weighted_f1": 0.9940194643778434,
+          "macro_recall": 0.9956907856775669,
+          "per_class": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 173
+            },
+            "Medium": {
+              "precision": 0.976,
+              "recall": 0.9951,
+              "f1": 0.9854,
+              "support": 204
+            },
+            "High": {
+              "precision": 0.9984,
+              "recall": 0.992,
+              "f1": 0.9952,
+              "support": 623
+            }
+          }
+        },
+        {
+          "fold": 5,
+          "accuracy": 0.999,
+          "macro_f1": 0.9982243892815118,
+          "weighted_f1": 0.9990002184283027,
+          "macro_recall": 0.9983739837398374,
+          "per_class": {
+            "Low": {
+              "precision": 0.9943,
+              "recall": 1.0,
+              "f1": 0.9971,
+              "support": 173
+            },
+            "Medium": {
+              "precision": 1.0,
+              "recall": 0.9951,
+              "f1": 0.9976,
+              "support": 205
+            },
+            "High": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 622
+            }
+          }
+        }
+      ]
+    },
+    "experiment_B": {
+      "experiment": "Experiment_B_8features",
+      "features": [
+        "wpm",
+        "pause_count",
+        "speech_duration",
+        "word_count",
+        "words_per_second",
+        "pauses_per_minute",
+        "words_per_pause",
+        "pause_density"
+      ],
+      "n_features": 8,
+      "cv_folds": 5,
+      "summary": {
+        "mean_accuracy": 0.9998,
+        "std_accuracy": 0.0004,
+        "mean_macro_f1": 0.9998,
+        "std_macro_f1": 0.0004,
+        "mean_weighted_f1": 0.9998,
+        "std_weighted_f1": 0.0004,
+        "mean_macro_recall": 0.9997,
+        "std_macro_recall": 0.0007
+      },
+      "per_class": {
+        "Low": {
+          "mean_precision": 1.0,
+          "std_precision": 0.0,
+          "mean_recall": 1.0,
+          "std_recall": 0.0,
+          "mean_f1": 1.0,
+          "std_f1": 0.0
+        },
+        "Medium": {
+          "mean_precision": 1.0,
+          "std_precision": 0.0,
+          "mean_recall": 0.999,
+          "std_recall": 0.002,
+          "mean_f1": 0.9995,
+          "std_f1": 0.001
+        },
+        "High": {
+          "mean_precision": 0.9997,
+          "std_precision": 0.0006,
+          "mean_recall": 1.0,
+          "std_recall": 0.0,
+          "mean_f1": 0.9998,
+          "std_f1": 0.0003
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "Low",
+          "Medium",
+          "High"
+        ],
+        "matrix": [
+          [
+            863,
+            0,
+            0
+          ],
+          [
+            0,
+            1022,
+            1
+          ],
+          [
+            0,
+            0,
+            3114
+          ]
+        ]
+      },
+      "feature_importance": {
+        "wpm": 0.3212,
+        "pause_count": 0.1831,
+        "speech_duration": 0.043,
+        "word_count": 0.0146,
+        "words_per_second": 0.0365,
+        "pauses_per_minute": 0.3135,
+        "words_per_pause": 0.0391,
+        "pause_density": 0.0489
+      },
+      "fold_details": [
+        {
+          "fold": 1,
+          "accuracy": 1.0,
+          "macro_f1": 1.0,
+          "weighted_f1": 1.0,
+          "macro_recall": 1.0,
+          "per_class": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 172
+            },
+            "Medium": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 205
+            },
+            "High": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 623
+            }
+          }
+        },
+        {
+          "fold": 2,
+          "accuracy": 1.0,
+          "macro_f1": 1.0,
+          "weighted_f1": 1.0,
+          "macro_recall": 1.0,
+          "per_class": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 172
+            },
+            "Medium": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 205
+            },
+            "High": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 623
+            }
+          }
+        },
+        {
+          "fold": 3,
+          "accuracy": 0.999,
+          "macro_f1": 0.9989136909746373,
+          "weighted_f1": 0.998999172461081,
+          "macro_recall": 0.9983660130718954,
+          "per_class": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 173
+            },
+            "Medium": {
+              "precision": 1.0,
+              "recall": 0.9951,
+              "f1": 0.9975,
+              "support": 204
+            },
+            "High": {
+              "precision": 0.9984,
+              "recall": 1.0,
+              "f1": 0.9992,
+              "support": 623
+            }
+          }
+        },
+        {
+          "fold": 4,
+          "accuracy": 1.0,
+          "macro_f1": 1.0,
+          "weighted_f1": 1.0,
+          "macro_recall": 1.0,
+          "per_class": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 173
+            },
+            "Medium": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 204
+            },
+            "High": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 623
+            }
+          }
+        },
+        {
+          "fold": 5,
+          "accuracy": 1.0,
+          "macro_f1": 1.0,
+          "weighted_f1": 1.0,
+          "macro_recall": 1.0,
+          "per_class": {
+            "Low": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 173
+            },
+            "Medium": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 205
+            },
+            "High": {
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 622
+            }
+          }
+        }
+      ]
+    },
+    "experiment_C_leakage_free": {
+      "experiment": "Experiment_C_leakage_free",
+      "features": [
+        "speech_duration",
+        "word_count"
+      ],
+      "n_features": 2,
+      "cv_folds": 5,
+      "summary": {
+        "mean_accuracy": 0.4538,
+        "std_accuracy": 0.0129,
+        "mean_macro_f1": 0.37,
+        "std_macro_f1": 0.0096,
+        "mean_weighted_f1": 0.4698,
+        "std_weighted_f1": 0.0098,
+        "mean_macro_recall": 0.3772,
+        "std_macro_recall": 0.0103
+      },
+      "per_class": {
+        "Low": {
+          "mean_precision": 0.2405,
+          "std_precision": 0.0224,
+          "mean_recall": 0.313,
+          "std_recall": 0.0406,
+          "mean_f1": 0.2716,
+          "std_f1": 0.0283
+        },
+        "Medium": {
+          "mean_precision": 0.2165,
+          "std_precision": 0.0096,
+          "mean_recall": 0.263,
+          "std_recall": 0.0297,
+          "mean_f1": 0.2371,
+          "std_f1": 0.0172
+        },
+        "High": {
+          "mean_precision": 0.6556,
+          "std_precision": 0.0058,
+          "mean_recall": 0.5555,
+          "std_recall": 0.0224,
+          "mean_f1": 0.6012,
+          "std_f1": 0.0136
+        }
+      },
+      "confusion_matrix": {
+        "labels": [
+          "Low",
+          "Medium",
+          "High"
+        ],
+        "matrix": [
+          [
+            270,
+            213,
+            380
+          ],
+          [
+            225,
+            269,
+            529
+          ],
+          [
+            626,
+            758,
+            1730
+          ]
+        ]
+      },
+      "feature_importance": {
+        "speech_duration": 0.6474,
+        "word_count": 0.3526
+      },
+      "fold_details": [
+        {
+          "fold": 1,
+          "accuracy": 0.454,
+          "macro_f1": 0.37205487966291373,
+          "weighted_f1": 0.4695786010527337,
+          "macro_recall": 0.3828834004492197,
+          "per_class": {
+            "Low": {
+              "precision": 0.254,
+              "recall": 0.3721,
+              "f1": 0.3019,
+              "support": 172
+            },
+            "Medium": {
+              "precision": 0.2054,
+              "recall": 0.2244,
+              "f1": 0.2145,
+              "support": 205
+            },
+            "High": {
+              "precision": 0.6565,
+              "recall": 0.5522,
+              "f1": 0.5998,
+              "support": 623
+            }
+          }
+        },
+        {
+          "fold": 2,
+          "accuracy": 0.475,
+          "macro_f1": 0.3791966787368568,
+          "weighted_f1": 0.48580018170647216,
+          "macro_recall": 0.3839868141486298,
+          "per_class": {
+            "Low": {
+              "precision": 0.2642,
+              "recall": 0.3256,
+              "f1": 0.2917,
+              "support": 172
+            },
+            "Medium": {
+              "precision": 0.2089,
+              "recall": 0.2293,
+              "f1": 0.2186,
+              "support": 205
+            },
+            "High": {
+              "precision": 0.6607,
+              "recall": 0.5971,
+              "f1": 0.6273,
+              "support": 623
+            }
+          }
+        },
+        {
+          "fold": 3,
+          "accuracy": 0.44,
+          "macro_f1": 0.3541712523358938,
+          "weighted_f1": 0.45788029905628463,
+          "macro_recall": 0.35900329693047145,
+          "per_class": {
+            "Low": {
+              "precision": 0.2057,
+              "recall": 0.2486,
+              "f1": 0.2251,
+              "support": 173
+            },
+            "Medium": {
+              "precision": 0.2156,
+              "recall": 0.2843,
+              "f1": 0.2452,
+              "support": 204
+            },
+            "High": {
+              "precision": 0.6494,
+              "recall": 0.5441,
+              "f1": 0.5921,
+              "support": 623
+            }
+          }
+        },
+        {
+          "fold": 4,
+          "accuracy": 0.459,
+          "macro_f1": 0.3797291744311611,
+          "weighted_f1": 0.4738488002064161,
+          "macro_recall": 0.3872617393605058,
+          "per_class": {
+            "Low": {
+              "precision": 0.2557,
+              "recall": 0.3237,
+              "f1": 0.2857,
+              "support": 173
+            },
+            "Medium": {
+              "precision": 0.2329,
+              "recall": 0.2843,
+              "f1": 0.2561,
+              "support": 204
+            },
+            "High": {
+              "precision": 0.6485,
+              "recall": 0.5538,
+              "f1": 0.5974,
+              "support": 623
+            }
+          }
+        },
+        {
+          "fold": 5,
+          "accuracy": 0.441,
+          "macro_f1": 0.36468769422463293,
+          "weighted_f1": 0.4618956718202175,
+          "macro_recall": 0.3726757461615841,
+          "per_class": {
+            "Low": {
+              "precision": 0.2227,
+              "recall": 0.2948,
+              "f1": 0.2537,
+              "support": 173
+            },
+            "Medium": {
+              "precision": 0.2198,
+              "recall": 0.2927,
+              "f1": 0.251,
+              "support": 205
+            },
+            "High": {
+              "precision": 0.6627,
+              "recall": 0.5305,
+              "f1": 0.5893,
+              "support": 622
+            }
+          }
+        }
+      ]
+    }
+  },
+  "five_key_questions": {
+    "Q1_meaningful_improvement": "YES \u2014 meaningful improvement in most metrics. Experiment A accuracy: 0.9956 vs baseline 0.4768. Low recall in A: 1.0000 vs baseline 0.0000. Leakage-free (C) Low recall: 0.3130 \u2014 this is the honest signal.",
+    "Q2_leakage_or_better_labels": "BOTH. Experiment A (includes wpm, pause_count) accuracy=0.9956, Low recall=1.0000. Experiment C (leakage-free, only speech_duration + word_count) accuracy=0.4538, Low recall=0.3130. The gap between A and C is the target leakage contribution. Genuine signal from independent features is limited.",
+    "Q3_useful_features": "In Experiment A: top features by importance: [('pause_count', 0.4594), ('wpm', 0.3177), ('speech_duration', 0.2069), ('word_count', 0.016)]. In leakage-free C: [('speech_duration', 0.6474), ('word_count', 0.3526)]. wpm and pause_count dominate in A/B because they directly encode the labeling rule. speech_duration and word_count are the only genuinely independent predictors.",
+    "Q4_safe_for_hackathon": "YES \u2014 safe for a hackathon prototype.",
+    "Q5_limitations_to_disclose": "1. TARGET LEAKAGE: Labels were generated using wpm and pause_count; these same features are in the model \u2014 Experiment A/B accuracy is inflated by rule-memorization. 2. RULE-GENERATED LABELS: Ground truth is domain rules, not human perceptual judgment of hesitation. The model learns a rule approximation, not real hesitation. 3. LIMITED INDEPENDENT SIGNAL: Leakage-free features (speech_duration, word_count) alone have low discriminative power \u2014 real hesitation depends on prosody, disfluencies, and fill words that are not captured in this dataset. 4. CLASS IMBALANCE REMAINS: High is ~62% of candidate dataset \u2014 model will still naturally prefer High. 5. NO HUMAN LABELS: Dataset has no perceptually validated Low/High hesitation samples. 6. INFERENCE PIPELINE GAP: Production inference (audio_features.py) already computes pause_count and wpm, so the feature gap is bridgeable \u2014 but label quality remains the fundamental constraint."
+  }
+}

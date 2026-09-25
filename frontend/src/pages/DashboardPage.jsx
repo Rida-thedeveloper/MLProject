@@ -6,6 +6,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import ScrollStroke from '../components/ScrollStroke';
 import { supabase } from '../supabaseClient';
+import { getLocalInterviews, combineInterviews } from '../utils/storage';
 
 const MONO = "'DM Mono', monospace";
 const SANS = "'DM Sans', sans-serif";
@@ -44,16 +45,25 @@ export default function DashboardPage({ setCurrentPage, user }) {
 
   useEffect(() => {
     async function fetchData() {
-      const { data, error } = await supabase
-        .from('interviews')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (!error && data) {
-        setHistoryData(data);
+      let sbData = [];
+      try {
+        const { data, error } = await supabase
+          .from('interviews')
+          .select('*');
+        if (!error && data) sbData = data;
+      } catch (e) {
+        console.warn('Supabase fetch skipped:', e);
       }
+      const localData = getLocalInterviews();
+      const combined = combineInterviews(sbData, localData);
+      setHistoryData(combined);
       setLoading(false);
     }
     fetchData();
+
+    const handleUpdate = () => fetchData();
+    window.addEventListener('mockly_interviews_updated', handleUpdate);
+    return () => window.removeEventListener('mockly_interviews_updated', handleUpdate);
   }, []);
 
   const totalInterviews = historyData.length;
