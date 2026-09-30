@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Mic, BarChart2, History, LayoutDashboard, Settings, LogIn, Award, Menu, X, LogOut } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
-export default function Navbar({ currentPage, setCurrentPage, user }) {
+export default function Navbar({ currentPage, setCurrentPage, user, onLogout }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems = [
@@ -140,22 +140,37 @@ export default function Navbar({ currentPage, setCurrentPage, user }) {
             {user && (
               <button
                 onClick={async () => {
-                  await supabase.auth.signOut();
-                  setCurrentPage('landing');
+                  if (onLogout) {
+                    await onLogout();
+                  } else {
+                    try { await supabase.auth.signOut(); } catch (e) {}
+                    setCurrentPage('landing');
+                  }
                 }}
+                title="Log Out"
+                aria-label="Log Out"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '7px 11px', borderRadius: 8,
-                  background: 'transparent', border: '1px solid transparent',
+                  padding: '7px 12px', borderRadius: 8,
+                  background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)',
                   color: 'var(--text-secondary)',
                   fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                  transition: 'all 0.15s',
+                  transition: 'all 0.15s ease',
                   fontFamily: "'DM Sans', sans-serif",
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent-rose)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = '#f87171';
+                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.45)';
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.16)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                }}
               >
                 <LogOut size={13} />
+                <span style={{ fontSize: 12 }}>Logout</span>
               </button>
             )}
 
@@ -198,6 +213,30 @@ export default function Navbar({ currentPage, setCurrentPage, user }) {
               </button>
             );
           })}
+
+          {user && (
+            <button
+              onClick={async () => {
+                setMobileOpen(false);
+                if (onLogout) await onLogout();
+                else {
+                  try { await supabase.auth.signOut(); } catch (e) {}
+                  setCurrentPage('landing');
+                }
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                padding: '10px 12px', borderRadius: 8,
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.25)', color: '#f87171',
+                fontSize: 14, fontWeight: 500, cursor: 'pointer', marginTop: 10,
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+            >
+              <LogOut size={15} />
+              Logout ({user.name})
+            </button>
+          )}
         </div>
       )}
 

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   PlusCircle, Award, CheckCircle2, TrendingUp, AlertTriangle, ArrowRight,
-  Calendar, Code, Database, Cpu, Mic, X, Lightbulb, Flame, Target, Gauge,
+  Calendar, Code, Database, Cpu, Mic, X, Lightbulb, Flame, Target, Gauge, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ScrollStroke from '../components/ScrollStroke';
 import { supabase } from '../supabaseClient';
-import { getLocalInterviews, combineInterviews } from '../utils/storage';
+import { getLocalInterviews, combineInterviews, deleteLocalInterview } from '../utils/storage';
 
 const MONO = "'DM Mono', monospace";
 const SANS = "'DM Sans', sans-serif";
@@ -85,10 +85,10 @@ export default function DashboardPage({ setCurrentPage, user }) {
   ];
 
   const recentInterviews = historyData.slice(0, 3).map(item => ({
-    id: item.id,
+    id: item.id || item.recorded_answers?.sessionId || item.sessionId || Math.random(),
     role: item.role,
     score: item.overall_score || 0,
-    date: new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    date: new Date(item.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     type: item.type,
     difficulty: item.difficulty || 'Standard'
   }));
@@ -426,15 +426,43 @@ export default function DashboardPage({ setCurrentPage, user }) {
                     </div>
                   </div>
 
-                  <motion.button
-                    onClick={() => setCurrentPage('report')}
-                    className="btn-surface"
-                    whileHover={{ y: -2 }}
-                    whileTap={{ scale: 0.97 }}
-                    style={{ flexShrink: 0 }}
-                  >
-                    View Report <ArrowRight size={13} />
-                  </motion.button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    <motion.button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (window.confirm("Are you sure you want to delete this session?")) {
+                          const targetId = item.id;
+                          setHistoryData(prev => prev.filter(r => (r.id || r.recorded_answers?.sessionId || r.sessionId) !== targetId));
+                          deleteLocalInterview(targetId);
+                          try {
+                            if (typeof targetId === 'number' || (!isNaN(Number(targetId)) && Number(targetId) > 0)) {
+                              await supabase.from('interviews').delete().eq('id', Number(targetId));
+                            } else {
+                              await supabase.from('interviews').delete().eq('id', targetId);
+                            }
+                          } catch (err) {
+                            console.warn('Supabase delete skipped or failed:', err);
+                          }
+                        }
+                      }}
+                      className="btn-surface"
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.97 }}
+                      style={{ padding: '8px 12px' }}
+                      title="Delete Session"
+                    >
+                      <Trash2 size={13} color="var(--accent-rose)" />
+                    </motion.button>
+
+                    <motion.button
+                      onClick={() => setCurrentPage('report')}
+                      className="btn-surface"
+                      whileHover={{ y: -2 }}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      View Report <ArrowRight size={13} />
+                    </motion.button>
+                  </div>
                 </motion.div>
               );
             })}

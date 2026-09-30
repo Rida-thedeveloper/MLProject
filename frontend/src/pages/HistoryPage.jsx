@@ -6,8 +6,7 @@ import {
 } from 'lucide-react';
 import ScrollStroke from '../components/ScrollStroke';
 import { supabase } from '../supabaseClient';
-
-import { getLocalInterviews, combineInterviews } from '../utils/storage';
+import { getLocalInterviews, combineInterviews, deleteLocalInterview } from '../utils/storage';
 
 export default function HistoryPage({ setCurrentPage }) {
   const [rawHistory, setRawHistory] = useState([]);
@@ -467,8 +466,21 @@ export default function HistoryPage({ setCurrentPage }) {
                         onClick={async (e) => {
                           e.stopPropagation();
                           if (window.confirm("Are you sure you want to delete this session?")) {
-                            setHistoryData(prev => prev.filter(r => r.id !== row.id));
-                            await supabase.from('interviews').delete().eq('id', row.id);
+                            const targetId = row.id;
+                            // 1. Remove from local component state
+                            setRawHistory(prev => prev.filter(r => (r.id || r.recorded_answers?.sessionId || r.sessionId) !== targetId));
+                            // 2. Remove from localStorage
+                            deleteLocalInterview(targetId);
+                            // 3. Remove from Supabase if stored
+                            try {
+                              if (typeof targetId === 'number' || (!isNaN(Number(targetId)) && Number(targetId) > 0)) {
+                                await supabase.from('interviews').delete().eq('id', Number(targetId));
+                              } else {
+                                await supabase.from('interviews').delete().eq('id', targetId);
+                              }
+                            } catch (err) {
+                              console.warn('Supabase delete skipped or failed:', err);
+                            }
                           }
                         }}
                         style={{ padding: '8px 12px' }}

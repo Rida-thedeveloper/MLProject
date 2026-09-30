@@ -1,0 +1,1486 @@
+{
+  "timestamp": "2026-09-25T17:36:44.519818+00:00",
+  "experiment": "Leakage-Free Balanced Dataset Validation",
+  "audit": {
+    "original_rows": 5000,
+    "new_balanced_rows": 7290,
+    "original_columns": [
+      "audio_id",
+      "question_id",
+      "wpm",
+      "pause_count",
+      "speech_duration",
+      "word_count",
+      "average_pause",
+      "silence_ratio",
+      "long_pause_count",
+      "filler_count",
+      "repetition_count",
+      "hesitation_label"
+    ],
+    "new_balanced_columns": [
+      "audio_id",
+      "question_id",
+      "wpm",
+      "pause_count",
+      "speech_duration",
+      "word_count",
+      "hesitation_label",
+      "is_real"
+    ],
+    "has_source_column": false,
+    "matched_real": 7290,
+    "identified_synthetic": 0,
+    "duplicate_audio_ids": 4012,
+    "duplicate_feature_rows": 4012,
+    "class_dist_original": {
+      "High": 2367,
+      "Low": 203,
+      "Medium": 2430
+    },
+    "class_dist_new": {
+      "High": 2430,
+      "Low": 2430,
+      "Medium": 2430
+    }
+  },
+  "leakage_checks": {
+    "1_no_synthetic_in_val": "PASS \u2014 validation indices are drawn exclusively from real_df (mockly_training.csv). Synthetic rows are concatenated only to training arrays.",
+    "2_no_dup_audio_id_train_val": "PASS \u2014 StratifiedKFold produces disjoint index partitions on the real array.",
+    "3_speaker_independent": "N/A \u2014 no speaker_id column in dataset (has_speaker_id=False)",
+    "4_no_target_leakage": "PASS \u2014 features (wpm, pause_count, speech_duration, word_count) are acoustic measurements, not derived from the hesitation_label.",
+    "5_features_not_label_source": "WARNING \u2014 original labels were derived from overall_score thresholds which have near-zero correlation with these 4 features (r < 0.05). This is a dataset design problem, not a leakage issue.",
+    "6_no_val_preprocessing": "PASS \u2014 no scaler/encoder fitted. Raw features used directly.",
+    "7_synth_from_val_leakage": "CONCERN \u2014 synthetic rows were generated from the ENTIRE original dataset. Some synthetic Low rows may have been generated using statistical distributions that include validation samples. This is a soft leakage risk. See results for impact assessment."
+  },
+  "experiments": {
+    "A_real_only": {
+      "description": "Original real dataset only (baseline)",
+      "features": [
+        "wpm",
+        "pause_count",
+        "speech_duration",
+        "word_count"
+      ],
+      "summary": {
+        "accuracy": {
+          "mean": 0.481,
+          "std": 0.0022
+        },
+        "macro_f1": {
+          "mean": 0.3272,
+          "std": 0.0014
+        },
+        "weighted_f1": {
+          "mean": 0.471,
+          "std": 0.002
+        },
+        "macro_recall": {
+          "mean": 0.3341,
+          "std": 0.0016
+        },
+        "High_precision": {
+          "mean": 0.4748,
+          "std": 0.0017
+        },
+        "High_recall": {
+          "mean": 0.4812,
+          "std": 0.005
+        },
+        "High_f1": {
+          "mean": 0.478,
+          "std": 0.0026
+        },
+        "Low_precision": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "Low_recall": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "Low_f1": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "Medium_precision": {
+          "mean": 0.4873,
+          "std": 0.0036
+        },
+        "Medium_recall": {
+          "mean": 0.521,
+          "std": 0.0072
+        },
+        "Medium_f1": {
+          "mean": 0.5036,
+          "std": 0.0049
+        },
+        "confusion_matrix_sum": [
+          [
+            1139,
+            0,
+            1228
+          ],
+          [
+            99,
+            0,
+            104
+          ],
+          [
+            1161,
+            3,
+            1266
+          ]
+        ]
+      },
+      "folds": [
+        {
+          "accuracy": 0.481,
+          "macro_f1": 0.3269,
+          "weighted_f1": 0.471,
+          "macro_recall": 0.3338,
+          "per_class": {
+            "High": {
+              "precision": 0.4718,
+              "recall": 0.4768,
+              "f1": 0.4743,
+              "support": 474
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 40
+            },
+            "Medium": {
+              "precision": 0.4894,
+              "recall": 0.5247,
+              "f1": 0.5065,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              226,
+              0,
+              248
+            ],
+            [
+              22,
+              0,
+              18
+            ],
+            [
+              231,
+              0,
+              255
+            ]
+          ],
+          "fold": 1,
+          "train_size": 4000,
+          "val_size": 1000,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.479,
+          "macro_f1": 0.326,
+          "weighted_f1": 0.4695,
+          "macro_recall": 0.3325,
+          "per_class": {
+            "High": {
+              "precision": 0.4759,
+              "recall": 0.4789,
+              "f1": 0.4774,
+              "support": 474
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 40
+            },
+            "Medium": {
+              "precision": 0.4837,
+              "recall": 0.5185,
+              "f1": 0.5005,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              227,
+              0,
+              247
+            ],
+            [
+              18,
+              0,
+              22
+            ],
+            [
+              232,
+              2,
+              252
+            ]
+          ],
+          "fold": 2,
+          "train_size": 4000,
+          "val_size": 1000,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.479,
+          "macro_f1": 0.3258,
+          "weighted_f1": 0.4688,
+          "macro_recall": 0.3328,
+          "per_class": {
+            "High": {
+              "precision": 0.475,
+              "recall": 0.482,
+              "f1": 0.4785,
+              "support": 473
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 41
+            },
+            "Medium": {
+              "precision": 0.4827,
+              "recall": 0.5165,
+              "f1": 0.499,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              228,
+              0,
+              245
+            ],
+            [
+              17,
+              0,
+              24
+            ],
+            [
+              235,
+              0,
+              251
+            ]
+          ],
+          "fold": 3,
+          "train_size": 4000,
+          "val_size": 1000,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.481,
+          "macro_f1": 0.3274,
+          "weighted_f1": 0.4711,
+          "macro_recall": 0.3343,
+          "per_class": {
+            "High": {
+              "precision": 0.4744,
+              "recall": 0.4905,
+              "f1": 0.4823,
+              "support": 473
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 41
+            },
+            "Medium": {
+              "precision": 0.4882,
+              "recall": 0.5123,
+              "f1": 0.5,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              232,
+              0,
+              241
+            ],
+            [
+              21,
+              0,
+              20
+            ],
+            [
+              236,
+              1,
+              249
+            ]
+          ],
+          "fold": 4,
+          "train_size": 4000,
+          "val_size": 1000,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.485,
+          "macro_f1": 0.3297,
+          "weighted_f1": 0.4745,
+          "macro_recall": 0.3369,
+          "per_class": {
+            "High": {
+              "precision": 0.4768,
+              "recall": 0.4778,
+              "f1": 0.4773,
+              "support": 473
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 41
+            },
+            "Medium": {
+              "precision": 0.4924,
+              "recall": 0.5329,
+              "f1": 0.5119,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              226,
+              0,
+              247
+            ],
+            [
+              21,
+              0,
+              20
+            ],
+            [
+              227,
+              0,
+              259
+            ]
+          ],
+          "fold": 5,
+          "train_size": 4000,
+          "val_size": 1000,
+          "val_synthetic_count": 0
+        }
+      ]
+    },
+    "B_real_plus_all_synth": {
+      "description": "Real train + ALL synthetic in train only; validation = real only",
+      "features": [
+        "wpm",
+        "pause_count",
+        "speech_duration",
+        "word_count"
+      ],
+      "summary": {
+        "accuracy": {
+          "mean": 0.481,
+          "std": 0.0022
+        },
+        "macro_f1": {
+          "mean": 0.3272,
+          "std": 0.0014
+        },
+        "weighted_f1": {
+          "mean": 0.471,
+          "std": 0.002
+        },
+        "macro_recall": {
+          "mean": 0.3341,
+          "std": 0.0016
+        },
+        "High_precision": {
+          "mean": 0.4748,
+          "std": 0.0017
+        },
+        "High_recall": {
+          "mean": 0.4812,
+          "std": 0.005
+        },
+        "High_f1": {
+          "mean": 0.478,
+          "std": 0.0026
+        },
+        "Low_precision": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "Low_recall": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "Low_f1": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "Medium_precision": {
+          "mean": 0.4873,
+          "std": 0.0036
+        },
+        "Medium_recall": {
+          "mean": 0.521,
+          "std": 0.0072
+        },
+        "Medium_f1": {
+          "mean": 0.5036,
+          "std": 0.0049
+        },
+        "confusion_matrix_sum": [
+          [
+            1139,
+            0,
+            1228
+          ],
+          [
+            99,
+            0,
+            104
+          ],
+          [
+            1161,
+            3,
+            1266
+          ]
+        ]
+      },
+      "folds": [
+        {
+          "accuracy": 0.481,
+          "macro_f1": 0.3269,
+          "weighted_f1": 0.471,
+          "macro_recall": 0.3338,
+          "per_class": {
+            "High": {
+              "precision": 0.4718,
+              "recall": 0.4768,
+              "f1": 0.4743,
+              "support": 474
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 40
+            },
+            "Medium": {
+              "precision": 0.4894,
+              "recall": 0.5247,
+              "f1": 0.5065,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              226,
+              0,
+              248
+            ],
+            [
+              22,
+              0,
+              18
+            ],
+            [
+              231,
+              0,
+              255
+            ]
+          ],
+          "fold": 1,
+          "train_size": 4000,
+          "train_real": 4000,
+          "train_synth": 0,
+          "val_size": 1000,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.479,
+          "macro_f1": 0.326,
+          "weighted_f1": 0.4695,
+          "macro_recall": 0.3325,
+          "per_class": {
+            "High": {
+              "precision": 0.4759,
+              "recall": 0.4789,
+              "f1": 0.4774,
+              "support": 474
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 40
+            },
+            "Medium": {
+              "precision": 0.4837,
+              "recall": 0.5185,
+              "f1": 0.5005,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              227,
+              0,
+              247
+            ],
+            [
+              18,
+              0,
+              22
+            ],
+            [
+              232,
+              2,
+              252
+            ]
+          ],
+          "fold": 2,
+          "train_size": 4000,
+          "train_real": 4000,
+          "train_synth": 0,
+          "val_size": 1000,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.479,
+          "macro_f1": 0.3258,
+          "weighted_f1": 0.4688,
+          "macro_recall": 0.3328,
+          "per_class": {
+            "High": {
+              "precision": 0.475,
+              "recall": 0.482,
+              "f1": 0.4785,
+              "support": 473
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 41
+            },
+            "Medium": {
+              "precision": 0.4827,
+              "recall": 0.5165,
+              "f1": 0.499,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              228,
+              0,
+              245
+            ],
+            [
+              17,
+              0,
+              24
+            ],
+            [
+              235,
+              0,
+              251
+            ]
+          ],
+          "fold": 3,
+          "train_size": 4000,
+          "train_real": 4000,
+          "train_synth": 0,
+          "val_size": 1000,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.481,
+          "macro_f1": 0.3274,
+          "weighted_f1": 0.4711,
+          "macro_recall": 0.3343,
+          "per_class": {
+            "High": {
+              "precision": 0.4744,
+              "recall": 0.4905,
+              "f1": 0.4823,
+              "support": 473
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 41
+            },
+            "Medium": {
+              "precision": 0.4882,
+              "recall": 0.5123,
+              "f1": 0.5,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              232,
+              0,
+              241
+            ],
+            [
+              21,
+              0,
+              20
+            ],
+            [
+              236,
+              1,
+              249
+            ]
+          ],
+          "fold": 4,
+          "train_size": 4000,
+          "train_real": 4000,
+          "train_synth": 0,
+          "val_size": 1000,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.485,
+          "macro_f1": 0.3297,
+          "weighted_f1": 0.4745,
+          "macro_recall": 0.3369,
+          "per_class": {
+            "High": {
+              "precision": 0.4768,
+              "recall": 0.4778,
+              "f1": 0.4773,
+              "support": 473
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 41
+            },
+            "Medium": {
+              "precision": 0.4924,
+              "recall": 0.5329,
+              "f1": 0.5119,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              226,
+              0,
+              247
+            ],
+            [
+              21,
+              0,
+              20
+            ],
+            [
+              227,
+              0,
+              259
+            ]
+          ],
+          "fold": 5,
+          "train_size": 4000,
+          "train_real": 4000,
+          "train_synth": 0,
+          "val_size": 1000,
+          "val_synthetic_count": 0
+        }
+      ]
+    },
+    "D1_real_only_8feat": {
+      "description": "Real only, 8 features (4 original + 4 engineered)",
+      "features": [
+        "wpm",
+        "pause_count",
+        "speech_duration",
+        "word_count",
+        "words_per_second",
+        "pauses_per_minute",
+        "words_per_pause",
+        "pause_density"
+      ],
+      "summary": {
+        "accuracy": {
+          "mean": 0.4814,
+          "std": 0.0107
+        },
+        "macro_f1": {
+          "mean": 0.3277,
+          "std": 0.0073
+        },
+        "weighted_f1": {
+          "mean": 0.4717,
+          "std": 0.0104
+        },
+        "macro_recall": {
+          "mean": 0.3344,
+          "std": 0.0076
+        },
+        "High_precision": {
+          "mean": 0.4767,
+          "std": 0.0114
+        },
+        "High_recall": {
+          "mean": 0.4833,
+          "std": 0.0242
+        },
+        "High_f1": {
+          "mean": 0.4799,
+          "std": 0.0171
+        },
+        "Low_precision": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "Low_recall": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "Low_f1": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "Medium_precision": {
+          "mean": 0.4878,
+          "std": 0.0096
+        },
+        "Medium_recall": {
+          "mean": 0.5197,
+          "std": 0.0126
+        },
+        "Medium_f1": {
+          "mean": 0.5032,
+          "std": 0.0086
+        },
+        "confusion_matrix_sum": [
+          [
+            1144,
+            5,
+            1218
+          ],
+          [
+            94,
+            0,
+            109
+          ],
+          [
+            1161,
+            6,
+            1263
+          ]
+        ]
+      },
+      "folds": [
+        {
+          "accuracy": 0.463,
+          "macro_f1": 0.315,
+          "weighted_f1": 0.4538,
+          "macro_recall": 0.3212,
+          "per_class": {
+            "High": {
+              "precision": 0.4567,
+              "recall": 0.4451,
+              "f1": 0.4509,
+              "support": 474
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 40
+            },
+            "Medium": {
+              "precision": 0.4719,
+              "recall": 0.5185,
+              "f1": 0.4941,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              211,
+              1,
+              262
+            ],
+            [
+              20,
+              0,
+              20
+            ],
+            [
+              231,
+              3,
+              252
+            ]
+          ],
+          "fold": 1,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.486,
+          "macro_f1": 0.3311,
+          "weighted_f1": 0.4769,
+          "macro_recall": 0.3374,
+          "per_class": {
+            "High": {
+              "precision": 0.4843,
+              "recall": 0.4895,
+              "f1": 0.4869,
+              "support": 474
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 40
+            },
+            "Medium": {
+              "precision": 0.4913,
+              "recall": 0.5226,
+              "f1": 0.5065,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              232,
+              2,
+              240
+            ],
+            [
+              17,
+              0,
+              23
+            ],
+            [
+              230,
+              2,
+              254
+            ]
+          ],
+          "fold": 2,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.494,
+          "macro_f1": 0.3361,
+          "weighted_f1": 0.4837,
+          "macro_recall": 0.3432,
+          "per_class": {
+            "High": {
+              "precision": 0.4885,
+              "recall": 0.4926,
+              "f1": 0.4905,
+              "support": 473
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 41
+            },
+            "Medium": {
+              "precision": 0.5,
+              "recall": 0.537,
+              "f1": 0.5179,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              233,
+              1,
+              239
+            ],
+            [
+              19,
+              0,
+              22
+            ],
+            [
+              225,
+              0,
+              261
+            ]
+          ],
+          "fold": 3,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.487,
+          "macro_f1": 0.3316,
+          "weighted_f1": 0.477,
+          "macro_recall": 0.3386,
+          "per_class": {
+            "High": {
+              "precision": 0.4823,
+              "recall": 0.518,
+              "f1": 0.4995,
+              "support": 473
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 41
+            },
+            "Medium": {
+              "precision": 0.4929,
+              "recall": 0.4979,
+              "f1": 0.4954,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              245,
+              0,
+              228
+            ],
+            [
+              20,
+              0,
+              21
+            ],
+            [
+              243,
+              1,
+              242
+            ]
+          ],
+          "fold": 4,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.477,
+          "macro_f1": 0.3245,
+          "weighted_f1": 0.467,
+          "macro_recall": 0.3314,
+          "per_class": {
+            "High": {
+              "precision": 0.4715,
+              "recall": 0.4715,
+              "f1": 0.4715,
+              "support": 473
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 41
+            },
+            "Medium": {
+              "precision": 0.4829,
+              "recall": 0.5226,
+              "f1": 0.502,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              223,
+              1,
+              249
+            ],
+            [
+              18,
+              0,
+              23
+            ],
+            [
+              232,
+              0,
+              254
+            ]
+          ],
+          "fold": 5,
+          "val_synthetic_count": 0
+        }
+      ]
+    },
+    "D2_real_synth_8feat": {
+      "description": "Real train + all synthetic, 8 features (4 original + 4 engineered)",
+      "features": [
+        "wpm",
+        "pause_count",
+        "speech_duration",
+        "word_count",
+        "words_per_second",
+        "pauses_per_minute",
+        "words_per_pause",
+        "pause_density"
+      ],
+      "summary": {
+        "accuracy": {
+          "mean": 0.4814,
+          "std": 0.0107
+        },
+        "macro_f1": {
+          "mean": 0.3277,
+          "std": 0.0073
+        },
+        "weighted_f1": {
+          "mean": 0.4717,
+          "std": 0.0104
+        },
+        "macro_recall": {
+          "mean": 0.3344,
+          "std": 0.0076
+        },
+        "High_precision": {
+          "mean": 0.4767,
+          "std": 0.0114
+        },
+        "High_recall": {
+          "mean": 0.4833,
+          "std": 0.0242
+        },
+        "High_f1": {
+          "mean": 0.4799,
+          "std": 0.0171
+        },
+        "Low_precision": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "Low_recall": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "Low_f1": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "Medium_precision": {
+          "mean": 0.4878,
+          "std": 0.0096
+        },
+        "Medium_recall": {
+          "mean": 0.5197,
+          "std": 0.0126
+        },
+        "Medium_f1": {
+          "mean": 0.5032,
+          "std": 0.0086
+        },
+        "confusion_matrix_sum": [
+          [
+            1144,
+            5,
+            1218
+          ],
+          [
+            94,
+            0,
+            109
+          ],
+          [
+            1161,
+            6,
+            1263
+          ]
+        ]
+      },
+      "folds": [
+        {
+          "accuracy": 0.463,
+          "macro_f1": 0.315,
+          "weighted_f1": 0.4538,
+          "macro_recall": 0.3212,
+          "per_class": {
+            "High": {
+              "precision": 0.4567,
+              "recall": 0.4451,
+              "f1": 0.4509,
+              "support": 474
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 40
+            },
+            "Medium": {
+              "precision": 0.4719,
+              "recall": 0.5185,
+              "f1": 0.4941,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              211,
+              1,
+              262
+            ],
+            [
+              20,
+              0,
+              20
+            ],
+            [
+              231,
+              3,
+              252
+            ]
+          ],
+          "fold": 1,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.486,
+          "macro_f1": 0.3311,
+          "weighted_f1": 0.4769,
+          "macro_recall": 0.3374,
+          "per_class": {
+            "High": {
+              "precision": 0.4843,
+              "recall": 0.4895,
+              "f1": 0.4869,
+              "support": 474
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 40
+            },
+            "Medium": {
+              "precision": 0.4913,
+              "recall": 0.5226,
+              "f1": 0.5065,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              232,
+              2,
+              240
+            ],
+            [
+              17,
+              0,
+              23
+            ],
+            [
+              230,
+              2,
+              254
+            ]
+          ],
+          "fold": 2,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.494,
+          "macro_f1": 0.3361,
+          "weighted_f1": 0.4837,
+          "macro_recall": 0.3432,
+          "per_class": {
+            "High": {
+              "precision": 0.4885,
+              "recall": 0.4926,
+              "f1": 0.4905,
+              "support": 473
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 41
+            },
+            "Medium": {
+              "precision": 0.5,
+              "recall": 0.537,
+              "f1": 0.5179,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              233,
+              1,
+              239
+            ],
+            [
+              19,
+              0,
+              22
+            ],
+            [
+              225,
+              0,
+              261
+            ]
+          ],
+          "fold": 3,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.487,
+          "macro_f1": 0.3316,
+          "weighted_f1": 0.477,
+          "macro_recall": 0.3386,
+          "per_class": {
+            "High": {
+              "precision": 0.4823,
+              "recall": 0.518,
+              "f1": 0.4995,
+              "support": 473
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 41
+            },
+            "Medium": {
+              "precision": 0.4929,
+              "recall": 0.4979,
+              "f1": 0.4954,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              245,
+              0,
+              228
+            ],
+            [
+              20,
+              0,
+              21
+            ],
+            [
+              243,
+              1,
+              242
+            ]
+          ],
+          "fold": 4,
+          "val_synthetic_count": 0
+        },
+        {
+          "accuracy": 0.477,
+          "macro_f1": 0.3245,
+          "weighted_f1": 0.467,
+          "macro_recall": 0.3314,
+          "per_class": {
+            "High": {
+              "precision": 0.4715,
+              "recall": 0.4715,
+              "f1": 0.4715,
+              "support": 473
+            },
+            "Low": {
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0,
+              "support": 41
+            },
+            "Medium": {
+              "precision": 0.4829,
+              "recall": 0.5226,
+              "f1": 0.502,
+              "support": 486
+            }
+          },
+          "confusion_matrix": [
+            [
+              223,
+              1,
+              249
+            ],
+            [
+              18,
+              0,
+              23
+            ],
+            [
+              232,
+              0,
+              254
+            ]
+          ],
+          "fold": 5,
+          "val_synthetic_count": 0
+        }
+      ]
+    }
+  },
+  "holdout": {
+    "H_A_real_only": {
+      "description": "Train on 80% real \u2192 evaluate on 20% real holdout",
+      "features": [
+        "wpm",
+        "pause_count",
+        "speech_duration",
+        "word_count"
+      ],
+      "metrics": {
+        "accuracy": 0.481,
+        "macro_f1": 0.3274,
+        "weighted_f1": 0.4711,
+        "macro_recall": 0.3343,
+        "per_class": {
+          "High": {
+            "precision": 0.4734,
+            "recall": 0.4884,
+            "f1": 0.4807,
+            "support": 473
+          },
+          "Low": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 41
+          },
+          "Medium": {
+            "precision": 0.4892,
+            "recall": 0.5144,
+            "f1": 0.5015,
+            "support": 486
+          }
+        },
+        "confusion_matrix": [
+          [
+            231,
+            0,
+            242
+          ],
+          [
+            22,
+            0,
+            19
+          ],
+          [
+            235,
+            1,
+            250
+          ]
+        ]
+      }
+    },
+    "H_B_real_plus_synth": {
+      "description": "Train on 80% real + all synthetic \u2192 evaluate on 20% real holdout",
+      "features": [
+        "wpm",
+        "pause_count",
+        "speech_duration",
+        "word_count"
+      ],
+      "metrics": {
+        "accuracy": 0.481,
+        "macro_f1": 0.3274,
+        "weighted_f1": 0.4711,
+        "macro_recall": 0.3343,
+        "per_class": {
+          "High": {
+            "precision": 0.4734,
+            "recall": 0.4884,
+            "f1": 0.4807,
+            "support": 473
+          },
+          "Low": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 41
+          },
+          "Medium": {
+            "precision": 0.4892,
+            "recall": 0.5144,
+            "f1": 0.5015,
+            "support": 486
+          }
+        },
+        "confusion_matrix": [
+          [
+            231,
+            0,
+            242
+          ],
+          [
+            22,
+            0,
+            19
+          ],
+          [
+            235,
+            1,
+            250
+          ]
+        ]
+      }
+    },
+    "H_C_real_synth_8feat": {
+      "description": "Train on 80% real + all synthetic, 8 features \u2192 evaluate on 20% real holdout",
+      "features": [
+        "wpm",
+        "pause_count",
+        "speech_duration",
+        "word_count",
+        "words_per_second",
+        "pauses_per_minute",
+        "words_per_pause",
+        "pause_density"
+      ],
+      "metrics": {
+        "accuracy": 0.484,
+        "macro_f1": 0.3292,
+        "weighted_f1": 0.4738,
+        "macro_recall": 0.3362,
+        "per_class": {
+          "High": {
+            "precision": 0.4757,
+            "recall": 0.4757,
+            "f1": 0.4757,
+            "support": 473
+          },
+          "Low": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "support": 41
+          },
+          "Medium": {
+            "precision": 0.4924,
+            "recall": 0.5329,
+            "f1": 0.5119,
+            "support": 486
+          }
+        },
+        "confusion_matrix": [
+          [
+            225,
+            1,
+            247
+          ],
+          [
+            21,
+            0,
+            20
+          ],
+          [
+            227,
+            0,
+            259
+          ]
+        ]
+      }
+    }
+  }
+}

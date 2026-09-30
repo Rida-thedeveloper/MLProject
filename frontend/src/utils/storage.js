@@ -39,3 +39,30 @@ export function combineInterviews(supabaseData, localData) {
   all.sort((a, b) => new Date(b.created_at || Date.now()) - new Date(a.created_at || Date.now()));
   return all;
 }
+
+export function deleteLocalInterview(sessionId) {
+  try {
+    const existing = getLocalInterviews();
+    const updated = existing.filter(item => {
+      const id = item.id || item.recorded_answers?.sessionId || item.sessionId;
+      return id !== sessionId && String(id) !== String(sessionId);
+    });
+    localStorage.setItem('mockly_interviews', JSON.stringify(updated));
+    window.dispatchEvent(new Event('mockly_interviews_updated'));
+    return updated;
+  } catch (e) {
+    console.error('Failed to delete local interview', e);
+    return [];
+  }
+}
+
+export function clearAllLocalInterviews() {
+  try {
+    localStorage.removeItem('mockly_interviews');
+    window.dispatchEvent(new Event('mockly_interviews_updated'));
+    return [];
+  } catch (e) {
+    console.error('Failed to clear local interviews', e);
+    return [];
+  }
+}

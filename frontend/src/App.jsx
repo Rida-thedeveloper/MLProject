@@ -51,6 +51,9 @@ export default function App() {
             email: session.user.email
           });
           setAuthDone(true);
+        } else {
+          setUser(null);
+          setAuthDone(false);
         }
       });
       return () => subscription?.unsubscribe();
@@ -58,6 +61,17 @@ export default function App() {
       console.warn('Supabase auth listener setup failed:', err);
     }
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('Supabase signOut warning:', err);
+    }
+    setUser(null);
+    setAuthDone(false);
+    setCurrentPage('landing');
+  };
 
   const [interviewSetup, setInterviewSetup] = useState({
     role: 'Software Engineer',
@@ -153,6 +167,7 @@ export default function App() {
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         user={user}
+        onLogout={handleLogout}
       />
 
       <main className="flex-1">
