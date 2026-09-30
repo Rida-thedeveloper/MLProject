@@ -293,7 +293,10 @@ function CountCard({ count, time, selected, onClick }) {
 }
 
 /* ── Main Page ───────────────────────────────────────────── */
-export default function SetupPage({ setCurrentPage, interviewSetup, setInterviewSetup }) {
+export default function SetupPage({
+  setCurrentPage, interviewSetup, setInterviewSetup,
+  setRecordedAnswers, setSelectedAnswerIdx,
+}) {
   const [role, setRole] = useState(interviewSetup.role || 'Software Engineer');
   const [difficulty, setDifficulty] = useState(interviewSetup.difficulty || 'Intermediate');
   const [type, setType] = useState(interviewSetup.type || 'Technical');
@@ -316,6 +319,9 @@ export default function SetupPage({ setCurrentPage, interviewSetup, setInterview
   ];
 
   const handleStart = () => {
+    // Clear all previous interview responses so past sessions don't leak into new ones
+    if (typeof setRecordedAnswers === 'function') setRecordedAnswers({});
+    if (typeof setSelectedAnswerIdx === 'function') setSelectedAnswerIdx(null);
     setInterviewSetup({ role, difficulty, type, questionCount: Number(questionCount), sessionId: crypto.randomUUID() });
     setCurrentPage('interview');
   };

@@ -172,8 +172,14 @@ function ScoreRing({ score }) {
 // Module-level lock to survive React Strict Mode unmount/remounts
 const savingSessions = new Set();
 
-export default function FinalReportPage({ setCurrentPage, recordedAnswers, interviewSetup }) {
-  const answerKeys = Object.keys(recordedAnswers);
+export default function FinalReportPage({
+  setCurrentPage, recordedAnswers, setRecordedAnswers, setSelectedAnswerIdx, interviewSetup
+}) {
+  const maxCount = interviewSetup?.questionCount || 5;
+  const answerKeys = Object.keys(recordedAnswers).filter(key => {
+    const n = Number(key);
+    return !isNaN(n) && n >= 0 && n < maxCount && recordedAnswers[key]?.transcript != null;
+  });
   const hasAnswers = answerKeys.length > 0;
   const answerCount = answerKeys.length;
   const [hasSaved, setHasSaved] = useState(false);
@@ -247,6 +253,11 @@ export default function FinalReportPage({ setCurrentPage, recordedAnswers, inter
       }
 
       async function saveInterview() {
+        const currentSessionAnswers = {};
+        answerKeys.forEach(k => {
+          currentSessionAnswers[k] = recordedAnswers[k];
+        });
+
         const record = {
           id: sId !== 'legacy' ? sId : crypto.randomUUID(),
           user_id: 'local_user',
@@ -260,7 +271,7 @@ export default function FinalReportPage({ setCurrentPage, recordedAnswers, inter
           total_pauses: totalPauses,
           primary_hesitation: primaryHesitation,
           avg_relevance: avgRelevance,
-          recorded_answers: { ...recordedAnswers, sessionId: sId },
+          recorded_answers: { ...currentSessionAnswers, sessionId: sId },
           created_at: new Date().toISOString()
         };
 
@@ -300,7 +311,6 @@ export default function FinalReportPage({ setCurrentPage, recordedAnswers, inter
     { label: 'Hesitation Level', value: primaryHesitation, icon: Activity, color: '#a078d0' },
     { label: 'Filler Words', value: hasAnswers ? totalFillers : '—', icon: MessageSquare, color: 'var(--accent-rose)' },
     { label: 'Pause Count', value: hasAnswers ? totalPauses : '—', icon: Clock, color: 'var(--accent-teal)' },
-    { label: 'Acoustic Clarity', value: 'N/A', icon: CheckCircle2, color: '#5cba7d' },
   ];
 
   // Dynamically generate insights
@@ -834,7 +844,11 @@ export default function FinalReportPage({ setCurrentPage, recordedAnswers, inter
           </button>
 
           <button
-            onClick={() => setCurrentPage('setup')}
+            onClick={() => {
+              if (typeof setRecordedAnswers === 'function') setRecordedAnswers({});
+              if (typeof setSelectedAnswerIdx === 'function') setSelectedAnswerIdx(null);
+              setCurrentPage('setup');
+            }}
             className="btn-gold"
             style={{
               padding: '14px 24px',

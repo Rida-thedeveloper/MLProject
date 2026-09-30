@@ -97,6 +97,8 @@ export default function App() {
             setCurrentPage={setCurrentPage}
             interviewSetup={interviewSetup}
             setInterviewSetup={setInterviewSetup}
+            setRecordedAnswers={setRecordedAnswers}
+            setSelectedAnswerIdx={setSelectedAnswerIdx}
           />
         );
       case 'interview':
@@ -123,6 +125,8 @@ export default function App() {
           <FinalReportPage
             setCurrentPage={setCurrentPage}
             recordedAnswers={recordedAnswers}
+            setRecordedAnswers={setRecordedAnswers}
+            setSelectedAnswerIdx={setSelectedAnswerIdx}
             interviewSetup={interviewSetup}
           />
         );

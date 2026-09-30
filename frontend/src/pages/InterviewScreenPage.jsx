@@ -8,6 +8,8 @@ import {
   Radio
 } from 'lucide-react';
 import ScrollStroke from '../components/ScrollStroke';
+import { getQuestions } from '../data/questionBank';
+
 
 /* ─── Waveform bars (animated while recording) ─────────────── */
 function WaveformBars({ active }) {
@@ -484,285 +486,10 @@ export default function InterviewScreenPage({
   setCurrentPage, interviewSetup, recordedAnswers, setRecordedAnswers,
   setSelectedAnswerIdx, selectedAnswerIdx,
 }) {
-  const QUESTION_BANK = {
-    "Software Engineer": {
-      Beginner: {
-        Technical: [
-          "What is the difference between a stack and a queue? Give a real-world example of each.",
-          "Explain what an API is and how you would use one in a web application.",
-          "What is the difference between compiled and interpreted languages?",
-          "What does DRY (Don't Repeat Yourself) mean in software development?",
-          "Explain what version control is and why Git is used.",
-          "What is the difference between an array and a linked list?",
-          "What is object-oriented programming? Name its four main principles.",
-          "What is the difference between HTTP and HTTPS?",
-          "What is a database and why do applications use one?",
-          "Explain what a loop is and describe a scenario where you would use a for loop vs a while loop.",
-        ],
-        Behavioral: [
-          "Tell me about yourself and why you want to become a software engineer.",
-          "Describe a time you learned a new technology quickly. How did you approach it?",
-          "Tell me about a project you built. What problem did it solve?",
-          "How do you handle it when you are stuck on a problem for a long time?",
-          "Describe a situation where you had to ask for help. How did you do it?",
-          "Tell me about a time you made a mistake in your code. How did you fix it?",
-          "How do you prioritize tasks when you have multiple things to work on?",
-        ],
-      },
-      Intermediate: {
-        Technical: [
-          "Explain the difference between SQL and NoSQL databases. When would you choose one over the other?",
-          "What is Big O notation? What is the time complexity of binary search?",
-          "Explain the concept of recursion and provide an example.",
-          "What is the difference between synchronous and asynchronous programming?",
-          "Describe the REST architectural style. What makes an API RESTful?",
-          "What is a design pattern? Describe the Singleton and Observer patterns.",
-          "Explain how garbage collection works in managed languages like Java or Python.",
-          "What is a race condition? How would you prevent one?",
-          "Describe the differences between a process and a thread.",
-          "What is caching and how would you implement it to improve API response time?",
-        ],
-        Behavioral: [
-          "Describe a time you had to deliver a feature under a tight deadline. What trade-offs did you make?",
-          "Tell me about a technical disagreement you had with a teammate. How was it resolved?",
-          "Give an example of when you proactively identified and fixed a bug before it reached production.",
-          "Describe a time you refactored code. What was the outcome?",
-          "Tell me about the most challenging bug you've ever debugged. How did you approach it?",
-          "How do you stay current with new technologies and industry trends?",
-          "Describe a time you mentored a junior developer or helped a teammate learn something new.",
-        ],
-      },
-      Advanced: {
-        Technical: [
-          "Design a URL shortener service like bit.ly. Walk through the system architecture.",
-          "Explain CAP theorem and how it applies to distributed database design.",
-          "How would you design a system to handle 1 million concurrent websocket connections?",
-          "What is consistent hashing and where would you use it?",
-          "Explain the difference between optimistic and pessimistic locking.",
-          "How would you approach database sharding for a high-traffic application?",
-          "What are the trade-offs between microservices and a monolith architecture?",
-          "Explain event sourcing and CQRS. What problems do they solve?",
-        ],
-        Behavioral: [
-          "Tell me about a time you led a technical initiative from idea to production.",
-          "Describe a situation where you had to push back on a product requirement for technical reasons.",
-          "Tell me about a time you made a critical architecture decision. What was your process?",
-          "Describe a production incident you owned. How did you diagnose, fix, and prevent recurrence?",
-          "Give an example of how you have influenced engineering best practices at your team.",
-        ],
-      },
-    },
-    "Frontend Developer": {
-      Beginner: {
-        Technical: [
-          "What is the difference between HTML, CSS, and JavaScript? What role does each play?",
-          "Explain the CSS box model. What are margin, border, padding, and content?",
-          "What is the DOM and how does JavaScript interact with it?",
-          "What is the difference between display: block, inline, and inline-block?",
-          "Explain what a CSS flexbox is and when you would use it.",
-          "What is responsive design? How do media queries help achieve it?",
-          "What is the difference between var, let, and const in JavaScript?",
-        ],
-        Behavioral: [
-          "Tell me about a website or UI you built that you are proud of.",
-          "How do you decide between different approaches when styling a component?",
-          "How do you test that your UI looks correct across different browsers?",
-          "Tell me about a time you worked closely with a designer to implement a UI.",
-        ],
-      },
-      Intermediate: {
-        Technical: [
-          "Explain the virtual DOM and how React uses it to optimize rendering.",
-          "What is the difference between controlled and uncontrolled components in React?",
-          "How does CSS specificity work? How do you resolve specificity conflicts?",
-          "What is code splitting and why is it important for frontend performance?",
-          "Explain the React component lifecycle. How do hooks replace lifecycle methods?",
-          "What is the difference between useState and useReducer? When would you use each?",
-          "How does browser rendering work? What is the critical rendering path?",
-          "How have you handled a situation where a feature looked great on desktop but was broken on mobile?",
-        ],
-        Behavioral: [
-          "Describe a time you significantly improved the performance of a web page.",
-          "Tell me about a complex UI component you built from scratch.",
-          "Tell me about a time you had to make a UI decision without clear design specifications.",
-          "Describe a time you introduced a UI component library or design system to a team.",
-        ],
-      },
-      Advanced: {
-        Technical: [
-          "How would you architect a large-scale React application for performance, scalability, and maintainability?",
-          "Explain micro-frontend architecture. What are its benefits and trade-offs?",
-          "How do you prevent XSS and CSRF attacks in a modern single-page application?",
-          "Describe strategies for optimizing Core Web Vitals (LCP, CLS, FID/INP) on a content-heavy site.",
-          "What are the trade-offs between CSS-in-JS and utility-first CSS (like Tailwind)?",
-        ],
-        Behavioral: [
-          "Tell me about a time you defined the frontend architecture for a new product from scratch.",
-          "Describe how you have handled a major UI regression that reached production.",
-          "Tell me about a large-scale frontend migration you led or participated in.",
-        ],
-      },
-    },
-    "Backend Developer": {
-      Beginner: {
-        Technical: [
-          "What is a REST API? How is it different from a GraphQL API?",
-          "Explain the difference between GET, POST, PUT, and DELETE HTTP methods.",
-          "What is a relational database? How does a JOIN work?",
-          "What is middleware in a web framework like Express or Django?",
-          "Explain the difference between authentication and authorization.",
-          "What is JSON and why is it commonly used in APIs?",
-        ],
-        Behavioral: [
-          "Tell me about a backend project you built. What problem did it solve?",
-          "Describe a time you had to debug an issue in an API you built.",
-          "How do you decide which database to use for a given project?",
-          "How do you test your API endpoints before deploying to production?",
-        ],
-      },
-      Intermediate: {
-        Technical: [
-          "Explain the N+1 query problem and how you solve it with eager loading.",
-          "What are database indexes? How do they speed up queries and what are their trade-offs?",
-          "Describe how you would implement JWT-based authentication in a REST API.",
-          "What is the difference between horizontal and vertical scaling?",
-          "What is a database transaction? Explain ACID properties.",
-          "Describe how you would implement role-based access control (RBAC) in an API.",
-        ],
-        Behavioral: [
-          "Describe a time you designed an API that was later consumed by a mobile team.",
-          "Tell me about a performance bottleneck you identified and fixed in a backend system.",
-          "Tell me about a time you implemented security improvements to a backend application.",
-        ],
-      },
-      Advanced: {
-        Technical: [
-          "Design a notification system that sends emails, SMS, and push notifications at scale.",
-          "How would you implement distributed tracing across a microservices architecture?",
-          "Explain the saga pattern for managing distributed transactions.",
-          "Describe how you would build a multi-tenant SaaS backend with strong data isolation.",
-          "How would you build a job scheduling system that is fault-tolerant?",
-        ],
-        Behavioral: [
-          "Tell me about a time you led the backend architecture for a product that scaled to a large number of users.",
-          "Describe a production outage you were responsible for diagnosing and fixing.",
-          "Describe how you have built a culture of reliability and observability in a backend team.",
-        ],
-      },
-    },
-    "AI/ML Engineer": {
-      Beginner: {
-        Technical: [
-          "What is the difference between supervised, unsupervised, and reinforcement learning?",
-          "Explain what a training set, validation set, and test set are.",
-          "What is overfitting? How can you detect it and what can you do to reduce it?",
-          "What is a neural network? Explain neurons, layers, and activation functions.",
-          "What is gradient descent and what role does the learning rate play?",
-          "What is a confusion matrix and what metrics can you derive from it?",
-        ],
-        Behavioral: [
-          "Tell me about a machine learning project you built or studied.",
-          "How do you approach understanding a new dataset for the first time?",
-          "Describe a time you had to explain an ML concept to someone without a technical background.",
-        ],
-      },
-      Intermediate: {
-        Technical: [
-          "Explain backpropagation. How are gradients computed through a neural network?",
-          "What is transfer learning and how would you fine-tune a pre-trained model for a new task?",
-          "Explain the attention mechanism. How does it differ from traditional RNN approaches?",
-          "What is the difference between bagging and boosting?",
-          "How do you handle class imbalance in a binary classification problem?",
-          "What are the key considerations when deploying an ML model to production?",
-        ],
-        Behavioral: [
-          "Describe a time you improved a model's performance significantly.",
-          "Tell me about a time you discovered data leakage in an ML pipeline.",
-          "Describe a situation where your model worked well in offline evaluation but poorly in production.",
-        ],
-      },
-      Advanced: {
-        Technical: [
-          "How would you design a real-time ML inference system that serves predictions at low latency?",
-          "Explain the transformer architecture in detail.",
-          "What is RLHF and how is it used to align LLMs?",
-          "How do you detect and handle concept drift in a production ML model?",
-          "Describe the trade-offs between distillation, quantization, and pruning.",
-        ],
-        Behavioral: [
-          "Tell me about a time you led an ML project from problem definition to production deployment.",
-          "Describe a time you navigated ethical concerns or risks in an ML project.",
-          "Tell me about a time you pushed back on a request to deploy a model you believed was not ready.",
-        ],
-      },
-    },
-    "Data Analyst": {
-      Beginner: {
-        Technical: [
-          "What is the difference between a mean, median, and mode? When would you use each?",
-          "Explain what a JOIN is in SQL. What is the difference between INNER JOIN and LEFT JOIN?",
-          "What is a pivot table and how is it useful in data analysis?",
-          "What is the difference between a bar chart and a histogram?",
-          "What does GROUP BY do in SQL? Give an example.",
-          "Explain what data cleaning is and why it is important before analysis.",
-        ],
-        Behavioral: [
-          "Tell me about a time you used data to answer a business question.",
-          "Describe a time you had to clean a messy dataset.",
-          "How do you communicate your analysis findings to a non-technical audience?",
-        ],
-      },
-      Intermediate: {
-        Technical: [
-          "How would you design a funnel analysis to understand drop-off in a sign-up flow?",
-          "Explain window functions in SQL. Give an example using ROW_NUMBER or LAG.",
-          "What is cohort analysis and when would you use it?",
-          "How do you perform A/B test analysis? How do you determine statistical significance?",
-          "How would you detect seasonality in a time-series dataset?",
-        ],
-        Behavioral: [
-          "Tell me about a time your data analysis directly influenced a product or business decision.",
-          "Describe a situation where two data sources gave conflicting results.",
-          "Describe a time you had to communicate a negative insight—data that showed a product was underperforming.",
-        ],
-      },
-      Advanced: {
-        Technical: [
-          "How would you build a multi-touch attribution model to measure marketing channel effectiveness?",
-          "Describe how you would design a real-time analytics pipeline for a high-volume event stream.",
-          "How would you approach forecasting revenue for the next 12 months using historical data?",
-          "Describe how you would implement anomaly detection on a business metrics dashboard.",
-        ],
-        Behavioral: [
-          "Tell me about a time you built an analytics strategy or roadmap for a product area.",
-          "Describe a time you convinced senior leadership to change a strategy based on your data analysis.",
-          "Tell me about a time you identified a major data quality issue and led the effort to fix it.",
-        ],
-      },
-    },
-  };
 
-  function getQuestions(setup) {
-    const role = setup?.role || 'Software Engineer';
-    const difficulty = setup?.difficulty || 'Intermediate';
-    const type = setup?.type || 'Technical';
-    const byRole = QUESTION_BANK[role] || QUESTION_BANK['Software Engineer'];
-    const byDiff = byRole[difficulty] || byRole['Intermediate'];
-    let pool;
-    if (type === 'Mixed') {
-      pool = [...(byDiff['Technical'] || []), ...(byDiff['Behavioral'] || [])];
-    } else {
-      pool = byDiff[type] || byDiff['Technical'] || [];
-    }
-    const arr = [...pool];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr.slice(0, setup?.questionCount || 5);
-  }
+  const [questions, setQuestions] = useState(() => getQuestions(interviewSetup));
+  const sessionIdRef = useRef(interviewSetup?.sessionId);
 
-  const [questions] = useState(() => getQuestions(interviewSetup));
   const [currentIdx, setCurrentIdx] = useState(selectedAnswerIdx ?? 0);
   const [isRecording, setIsRecording] = useState(false);
   const [timer, setTimer] = useState(0);
@@ -773,6 +500,20 @@ export default function InterviewScreenPage({
   const audioChunksRef = useRef([]);
   const timerIntervalRef = useRef(null);
   const spokenIdxRef = useRef(-1);
+
+  // Sync questions if sessionId changes or questionCount changes
+  useEffect(() => {
+    if (
+      interviewSetup?.sessionId !== sessionIdRef.current ||
+      questions.length !== (interviewSetup?.questionCount || 5)
+    ) {
+      sessionIdRef.current = interviewSetup?.sessionId;
+      const fresh = getQuestions(interviewSetup);
+      setQuestions(fresh);
+      setCurrentIdx(0);
+      spokenIdxRef.current = -1;
+    }
+  }, [interviewSetup]);
 
   const currentAnswer = recordedAnswers[currentIdx];
   const progress = ((currentIdx + 1) / questions.length) * 100;
@@ -1599,13 +1340,13 @@ export default function InterviewScreenPage({
                 fontFamily: "'DM Mono', monospace",
                 fontSize: 9, color: 'rgba(201,168,76,0.6)',
               }}>
-                {Object.values(recordedAnswers).filter(a => a?.transcript).length} / {questions.length}
+                {questions.filter((_, idx) => recordedAnswers[idx]?.transcript).length} / {questions.length}
               </span>
             </div>
             <div style={{ height: 2, borderRadius: 99, background: 'rgba(255,255,255,0.05)' }}>
               <motion.div
                 animate={{
-                  width: `${(Object.values(recordedAnswers).filter(a => a?.transcript).length / questions.length) * 100}%`,
+                  width: `${(questions.filter((_, idx) => recordedAnswers[idx]?.transcript).length / questions.length) * 100}%`,
                 }}
                 transition={{ duration: 0.5 }}
                 style={{
