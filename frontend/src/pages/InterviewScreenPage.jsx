@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import ScrollStroke from '../components/ScrollStroke';
 import { getQuestions } from '../data/questionBank';
+import animationGif from '../assets/Animation.gif';
 
 
 /* ─── Waveform bars (animated while recording) ─────────────── */
@@ -500,6 +501,8 @@ export default function InterviewScreenPage({
   const audioChunksRef = useRef([]);
   const timerIntervalRef = useRef(null);
   const spokenIdxRef = useRef(-1);
+  const interviewerVideoRef = useRef(null);
+  const utteranceRef = useRef(null);
 
   // Sync questions if sessionId changes or questionCount changes
   useEffect(() => {
@@ -523,12 +526,39 @@ export default function InterviewScreenPage({
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(questions[currentIdx]);
+    utteranceRef.current = u;
     u.rate = 0.95;
-    u.onstart = () => setIsSpeaking(true);
-    u.onend = () => setIsSpeaking(false);
-    u.onerror = () => setIsSpeaking(false);
+    u.onstart = () => {
+      setIsSpeaking(true);
+      if (interviewerVideoRef.current) {
+        interviewerVideoRef.current.currentTime = 0;
+        interviewerVideoRef.current.play().catch(() => {});
+      }
+    };
+    u.onend = () => {
+      setIsSpeaking(false);
+      if (interviewerVideoRef.current) {
+        interviewerVideoRef.current.pause();
+      }
+    };
+    u.onerror = () => {
+      setIsSpeaking(false);
+      if (interviewerVideoRef.current) {
+        interviewerVideoRef.current.pause();
+      }
+    };
     window.speechSynthesis.speak(u);
   };
+
+  useEffect(() => {
+    if (interviewerVideoRef.current) {
+      if (isSpeaking) {
+        interviewerVideoRef.current.play().catch(() => {});
+      } else {
+        interviewerVideoRef.current.pause();
+      }
+    }
+  }, [isSpeaking]);
 
   useEffect(() => {
     let tid;
@@ -542,10 +572,20 @@ export default function InterviewScreenPage({
         spokenIdxRef.current = currentIdx;
       }
     }
-    return () => { if (tid) clearTimeout(tid); };
+    return () => {
+      if (tid) clearTimeout(tid);
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    };
   }, [currentIdx]);
 
   const startRecording = async () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsSpeaking(false);
+    if (interviewerVideoRef.current) {
+      interviewerVideoRef.current.pause();
+    }
     setErrorMsg('');
     audioChunksRef.current = [];
     try {
@@ -893,145 +933,422 @@ export default function InterviewScreenPage({
                 </motion.div>
               )}
 
-              {/* ── Mic zone ── */}
+              {/* ── Mic / Video zone ── */}
               <div style={{
-                background: 'rgba(0,0,0,0.2)',
-                border: '1px solid rgba(255,255,255,0.05)',
-                borderRadius: 16, padding: '36px 24px',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22,
+                background: 'rgba(0,0,0,0.4)',
+                border: isRecording
+                  ? '1.5px solid rgba(96,200,255,0.4)'
+                  : isSpeaking
+                  ? '1.5px solid rgba(201,168,76,0.45)'
+                  : '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 20,
+                padding: 0,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 position: 'relative', overflow: 'hidden',
+                width: '100%',
+                minHeight: 'clamp(340px, 46vh, 480px)',
+                boxShadow: isRecording
+                  ? '0 16px 48px rgba(0,0,0,0.7), 0 0 35px rgba(96,200,255,0.15)'
+                  : isSpeaking
+                  ? '0 16px 48px rgba(0,0,0,0.7), 0 0 35px rgba(201,168,76,0.18)'
+                  : '0 12px 36px rgba(0,0,0,0.5)',
+                transition: 'all 0.35s ease',
               }}>
                 <AnimatePresence mode="wait">
                   {isRecording ? (
                     <motion.div
                       key="recording"
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, width: '100%' }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={stopRecording}
+                      title="Click anywhere to stop recording"
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: '100%',
+                        minHeight: 'clamp(340px, 46vh, 480px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
                     >
-                      {/* REC badge */}
+                      {/* Full-bleed candidate video GIF */}
+                      <img
+                        src={animationGif}
+                        alt="Candidate live video"
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                        }}
+                      />
+
+                      {/* Vignette & Cinematic Shadow Overlay */}
                       <div style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '5px 16px', borderRadius: 999,
-                        background: 'rgba(212,106,106,0.1)',
-                        border: '1px solid rgba(212,106,106,0.25)',
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.1) 25%, rgba(0,0,0,0.1) 70%, rgba(0,0,0,0.85) 100%)',
+                        pointerEvents: 'none',
+                      }} />
+
+                      {/* Top Overlay: Live status & REC timer */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 16,
+                        left: 18,
+                        right: 18,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        pointerEvents: 'none',
+                        zIndex: 10,
                       }}>
-                        <motion.div
-                          animate={{ opacity: [1, 0.2, 1] }}
-                          transition={{ duration: 1, repeat: Infinity }}
-                          style={{ width: 7, height: 7, borderRadius: '50%', background: '#d46a6a' }}
-                        />
-                        <span style={{
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '5px 12px',
+                          borderRadius: 999,
+                          background: 'rgba(0,0,0,0.65)',
+                          backdropFilter: 'blur(8px)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          fontSize: 10,
                           fontFamily: "'DM Mono', monospace",
-                          fontSize: 11, fontWeight: 700,
-                          color: '#d46a6a', letterSpacing: '0.12em',
+                          color: '#3db8a0',
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
                         }}>
-                          REC &nbsp; {fmt(timer)}
-                        </span>
+                          <motion.span
+                            animate={{ opacity: [1, 0.3, 1] }}
+                            transition={{ duration: 1.2, repeat: Infinity }}
+                            style={{ width: 6, height: 6, borderRadius: '50%', background: '#3db8a0' }}
+                          />
+                          <span>Candidate Live Feed</span>
+                        </div>
+
+                        {/* Centered / Right REC Timer Badge */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '6px 16px',
+                          borderRadius: 999,
+                          background: 'rgba(0,0,0,0.7)',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px solid rgba(255,100,100,0.3)',
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                        }}>
+                          <motion.div
+                            animate={{ opacity: [1, 0.2, 1] }}
+                            transition={{ duration: 0.9, repeat: Infinity }}
+                            style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff4d4d' }}
+                          />
+                          <span style={{
+                            fontFamily: "'DM Mono', monospace",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: '#ffffff',
+                            letterSpacing: '0.14em',
+                          }}>
+                            REC &nbsp; {fmt(timer)}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Waveform */}
-                      <WaveformBars active={true} />
-
-                      {/* Stop button */}
-                      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <motion.div
-                          animate={{ scale: [1, 1.12, 1], opacity: [0.3, 0.6, 0.3] }}
-                          transition={{ duration: 1.5, repeat: Infinity }}
-                          style={{
-                            position: 'absolute',
-                            width: 100, height: 100, borderRadius: '50%',
-                            background: 'radial-gradient(circle, rgba(212,106,106,0.12), transparent)',
-                          }}
-                        />
+                      {/* Bottom Controls Bar */}
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          position: 'absolute',
+                          bottom: 20,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 8,
+                          zIndex: 10,
+                        }}
+                      >
                         <motion.button
                           onClick={stopRecording}
-                          whileHover={{ scale: 1.08 }}
-                          whileTap={{ scale: 0.93 }}
+                          whileHover={{ scale: 1.06, boxShadow: '0 0 30px rgba(220,53,69,0.7)' }}
+                          whileTap={{ scale: 0.94 }}
                           style={{
-                            width: 68, height: 68, borderRadius: '50%',
-                            background: 'rgba(212,106,106,0.12)',
-                            border: '1.5px solid rgba(212,106,106,0.4)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer', color: '#ff9090',
-                            position: 'relative', zIndex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '12px 28px',
+                            borderRadius: 999,
+                            background: 'rgba(220,53,69,0.92)',
+                            backdropFilter: 'blur(10px)',
+                            border: '1.5px solid rgba(255,255,255,0.3)',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.5), 0 0 20px rgba(220,53,69,0.4)',
+                            color: '#ffffff',
+                            fontFamily: "'DM Sans', sans-serif",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            cursor: 'pointer',
                           }}
                         >
-                          <Square size={20} fill="#ff9090" strokeWidth={0} />
+                          <Square size={14} fill="#ffffff" strokeWidth={0} />
+                          <span>Stop Recording</span>
                         </motion.button>
+                        <span style={{
+                          fontSize: 10,
+                          fontFamily: "'DM Mono', monospace",
+                          color: 'rgba(255,255,255,0.7)',
+                          textShadow: '0 2px 4px rgba(0,0,0,0.9)',
+                          letterSpacing: '0.05em',
+                        }}>
+                          Click button or screen to finish answer
+                        </span>
                       </div>
-
-                      <span style={{
-                        fontFamily: "'DM Mono', monospace",
-                        fontSize: 10, letterSpacing: '0.12em',
-                        color: 'rgba(255,255,255,0.2)',
-                      }}>
-                        Click to stop recording
-                      </span>
                     </motion.div>
                   ) : (
                     <motion.div
-                      key="idle"
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}
+                      key="interviewer-stage"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: '100%',
+                        minHeight: 'clamp(340px, 46vh, 480px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                      }}
                     >
-                      {/* Idle waveform */}
-                      <WaveformBars active={false} />
+                      {/* AI Interviewer Video Element */}
+                      <video
+                        ref={interviewerVideoRef}
+                        src="/interview.mp4"
+                        muted
+                        loop
+                        playsInline
+                        poster="/interview_thumb.jpg"
+                        onLoadedData={() => {
+                          if (isSpeaking && interviewerVideoRef.current) {
+                            interviewerVideoRef.current.play().catch(() => {});
+                          }
+                        }}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                        }}
+                      />
 
-                      {/* Mic button */}
-                      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <motion.div
-                          animate={{ scale: [1, 1.15, 1], opacity: [0.15, 0.3, 0.15] }}
-                          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                          style={{
-                            position: 'absolute',
-                            width: 110, height: 110, borderRadius: '50%',
-                            background: 'radial-gradient(circle, rgba(56,189,248,0.15), transparent)',
-                          }}
-                        />
-                        <motion.div
-                          animate={{ scale: [1, 1.08, 1], opacity: [0.3, 0.5, 0.3] }}
-                          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
-                          style={{
-                            position: 'absolute',
-                            width: 82, height: 82, borderRadius: '50%',
-                            border: '1px solid rgba(56,189,248,0.2)',
-                          }}
-                        />
+                      {/* Clean Vignette Overlay (Transparent on face, gentle shadow at top and bottom) */}
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 18%, transparent 40%, transparent 60%, rgba(0,0,0,0.85) 100%)',
+                        pointerEvents: 'none',
+                      }} />
+
+                      {/* Top Bar: AI Interviewer Status & Replay Control */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 16,
+                        left: 18,
+                        right: 18,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        zIndex: 10,
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 7,
+                          padding: '6px 14px',
+                          borderRadius: 999,
+                          background: isSpeaking ? 'rgba(201,168,76,0.25)' : 'rgba(0,0,0,0.65)',
+                          backdropFilter: 'blur(8px)',
+                          border: `1px solid ${isSpeaking ? 'rgba(201,168,76,0.55)' : 'rgba(255,255,255,0.18)'}`,
+                          fontSize: 10,
+                          fontFamily: "'DM Mono', monospace",
+                          color: isSpeaking ? '#e8c96a' : 'rgba(255,255,255,0.75)',
+                          letterSpacing: '0.1em',
+                          textTransform: 'uppercase',
+                        }}>
+                          <motion.span
+                            animate={isSpeaking ? { scale: [1, 1.4, 1], opacity: [1, 0.5, 1] } : {}}
+                            transition={{ duration: 0.8, repeat: Infinity }}
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              background: isSpeaking ? '#e8c96a' : '#888',
+                            }}
+                          />
+                          <span>{isSpeaking ? 'AI Interviewer Speaking...' : 'AI Interviewer (Paused)'}</span>
+                        </div>
+
+                        {/* Audio control button */}
                         <motion.button
-                          onClick={startRecording}
-                          whileHover={{ scale: 1.08, boxShadow: '0 0 30px rgba(56,189,248,0.2)' }}
-                          whileTap={{ scale: 0.93 }}
+                          onClick={handlePlayQuestion}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                           style={{
-                            width: 68, height: 68, borderRadius: '50%',
-                            background: 'radial-gradient(circle at 35% 35%, rgba(56,189,248,0.18), rgba(0,93,255,0.08))',
-                            border: '1.5px solid rgba(56,189,248,0.3)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#60c8ff', cursor: 'pointer', position: 'relative', zIndex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '6px 14px',
+                            borderRadius: 999,
+                            background: 'rgba(0,0,0,0.65)',
+                            backdropFilter: 'blur(8px)',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            color: '#ffffff',
+                            fontFamily: "'DM Sans', sans-serif",
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: 'pointer',
                           }}
                         >
-                          <Mic size={24} />
+                          <Volume2 size={12} color={isSpeaking ? '#e8c96a' : '#ffffff'} />
+                          <span>{isSpeaking ? 'Replay' : 'Play Question'}</span>
                         </motion.button>
                       </div>
 
-                      <div style={{ textAlign: 'center' }}>
-                        <p style={{
-                          fontFamily: "'DM Sans', sans-serif",
-                          fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.6)',
-                          margin: '0 0 4px',
-                        }}>
-                          {currentAnswer ? 'Re-record Response' : 'Record Response'}
-                        </p>
-                        <p style={{
-                          fontFamily: "'DM Mono', monospace",
-                          fontSize: 10, letterSpacing: '0.1em',
-                          color: 'rgba(255,255,255,0.2)', margin: 0,
-                        }}>
-                          Click the microphone to begin
-                        </p>
+                      {/* Bottom Docked Controls (Face remains 100% visible & unobstructed) */}
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          position: 'absolute',
+                          bottom: 20,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 8,
+                          zIndex: 10,
+                          width: '90%',
+                          maxWidth: 420,
+                        }}
+                      >
+                        {isSpeaking ? (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 12,
+                            width: '100%',
+                            flexWrap: 'wrap',
+                          }}>
+                            <div style={{
+                              padding: '8px 18px',
+                              borderRadius: 999,
+                              background: 'rgba(0,0,0,0.75)',
+                              backdropFilter: 'blur(10px)',
+                              border: '1px solid rgba(201,168,76,0.35)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                            }}>
+                              <WaveformBars active={true} />
+                              <span style={{
+                                fontFamily: "'DM Sans', sans-serif",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: '#e8c96a',
+                              }}>
+                                Speaking question...
+                              </span>
+                            </div>
+
+                            <motion.button
+                              onClick={startRecording}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '9px 18px',
+                                borderRadius: 999,
+                                background: 'rgba(14,165,233,0.35)',
+                                backdropFilter: 'blur(10px)',
+                                border: '1.5px solid rgba(14,165,233,0.6)',
+                                color: '#ffffff',
+                                fontFamily: "'DM Sans', sans-serif",
+                                fontSize: 12,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <Mic size={14} />
+                              <span>Answer Now</span>
+                            </motion.button>
+                          </div>
+                        ) : (
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 7,
+                            width: '100%',
+                          }}>
+                            <motion.button
+                              onClick={startRecording}
+                              whileHover={{ scale: 1.05, boxShadow: '0 0 35px rgba(14,165,233,0.65)' }}
+                              whileTap={{ scale: 0.95 }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 10,
+                                padding: '12px 28px',
+                                borderRadius: 999,
+                                background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+                                border: '1.5px solid rgba(255,255,255,0.4)',
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.5), 0 0 25px rgba(14,165,233,0.4)',
+                                color: '#ffffff',
+                                fontFamily: "'DM Sans', sans-serif",
+                                fontSize: 14,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                width: 'auto',
+                              }}
+                            >
+                              <div style={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: '50%',
+                                background: 'rgba(255,255,255,0.22)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}>
+                                <Mic size={14} color="#ffffff" />
+                              </div>
+                              <span>{currentAnswer ? 'Re-record Response' : 'Click to Answer (Start Recording)'}</span>
+                            </motion.button>
+
+                            <span style={{
+                              fontSize: 10,
+                              fontFamily: "'DM Mono', monospace",
+                              color: 'rgba(255,255,255,0.7)',
+                              textShadow: '0 2px 4px rgba(0,0,0,0.9)',
+                              letterSpacing: '0.04em',
+                            }}>
+                              Interviewer is ready • Click button to speak
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   )}

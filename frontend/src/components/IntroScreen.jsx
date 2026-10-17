@@ -359,11 +359,15 @@ export default function IntroScreen({ onDone }) {
               }} />
               <video
                 ref={videoRef}
-                src="/intro.mp4"
+                src="/Intro_updated.mp4"
                 autoPlay
                 playsInline
                 style={{
-                  width: 'min(320px, 38vw)', display: 'block',
+                  width: 'min(300px, 34vw)',
+                  maxHeight: 'min(480px, 60vh)',
+                  aspectRatio: '9/16',
+                  objectFit: 'cover',
+                  display: 'block',
                   borderRadius: '16px',
                   boxShadow: '0 0 0 1px rgba(201,168,76,0.15), 0 24px 64px rgba(0,0,0,0.5)',
                   position: 'relative', zIndex: 1,
@@ -372,7 +376,7 @@ export default function IntroScreen({ onDone }) {
             </div>
 
             {/* Progress bar */}
-            <div style={{ width: 'min(320px, 38vw)', height: '1px', background: 'rgba(255,255,255,0.07)', borderRadius: '1px' }}>
+            <div style={{ width: 'min(300px, 34vw)', height: '1px', background: 'rgba(255,255,255,0.07)', borderRadius: '1px' }}>
               <motion.div
                 style={{
                   height: '100%', background: 'var(--gold)',
