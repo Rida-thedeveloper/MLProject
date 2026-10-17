@@ -25,3 +25,15 @@ backend/__pycache__/
 .env
 .env.local
 .env.production
+
+# ML — ignore heavy/backup model files, keep only production model
+backend/ml/models/hesitation_rf_balanced_candidate.joblib
+backend/ml/models/hesitation_rf_balanced_leakage_free_candidate.joblib
+backend/ml/models/hesitation_rf_baseline.joblib
+backend/ml/models/hesitation_rf_v2_legacy_backup.joblib
+backend/ml/models/hesitation_rf.joblib
+
+# Training datasets (large CSV/parquet files)
+backend/ml/data/
+backend/ml/*.csv
+backend/ml/*.parquet
